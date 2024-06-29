@@ -20,35 +20,35 @@ pub fn diff_rebuildtexts( diffs: Vec<diff_match_patch::Diff>) -> Vec<String> {
 #[test]
 pub fn test_diff_common_prefix() {
     let dmp = diff_match_patch::Dmp::new();
-    assert_eq!(0, dmp.diff_common_prefix(&("abc".to_string().chars().collect()), &("xyz".to_string().chars().collect())));
+    assert_eq!(0, dmp.diff_common_prefix(&("abc".to_string().chars().collect::<Vec<_>>()), &("xyz".to_string().chars().collect::<Vec<_>>())));
 
-    assert_eq!(4, dmp.diff_common_prefix(&("1234abcdef".to_string().chars().collect()), &("1234xyz".to_string().chars().collect())));
+    assert_eq!(4, dmp.diff_common_prefix(&("1234abcdef".to_string().chars().collect::<Vec<_>>()), &("1234xyz".to_string().chars().collect::<Vec<_>>())));
 
-    assert_eq!(4, dmp.diff_common_prefix(&("1234".to_string().chars().collect()), &("1234xyz".to_string().chars().collect())));
+    assert_eq!(4, dmp.diff_common_prefix(&("1234".to_string().chars().collect::<Vec<_>>()), &("1234xyz".to_string().chars().collect::<Vec<_>>())));
 }
 
 
 #[test]
 pub fn test_diff_common_suffix() {
     let dmp = diff_match_patch::Dmp::new();
-    assert_eq!(0, dmp.diff_common_suffix(&("abc".to_string().chars().collect()), &("xyz".to_string().chars().collect())));
+    assert_eq!(0, dmp.diff_common_suffix(&("abc".to_string().chars().collect::<Vec<_>>()), &("xyz".to_string().chars().collect::<Vec<_>>())));
 
-    assert_eq!(4, dmp.diff_common_suffix(&("abcdef1234".to_string().chars().collect()), &("xyz1234".to_string().chars().collect())));
+    assert_eq!(4, dmp.diff_common_suffix(&("abcdef1234".to_string().chars().collect::<Vec<_>>()), &("xyz1234".to_string().chars().collect::<Vec<_>>())));
 
-    assert_eq!(4, dmp.diff_common_suffix(&("1234".to_string().chars().collect()), &("xyz1234".to_string().chars().collect())));
+    assert_eq!(4, dmp.diff_common_suffix(&("1234".to_string().chars().collect::<Vec<_>>()), &("xyz1234".to_string().chars().collect::<Vec<_>>())));
 }
 
 
 #[test]
 pub fn test_diff_common_overlap() {
     let dmp = diff_match_patch::Dmp::new();
-    assert_eq!(0, dmp.diff_common_overlap(&("".to_string().chars().collect()), &("abcd".to_string().chars().collect())));
+    assert_eq!(0, dmp.diff_common_overlap(&("".to_string().chars().collect::<Vec<_>>()), &("abcd".to_string().chars().collect::<Vec<_>>())));
 
-    assert_eq!(3, dmp.diff_common_overlap(&("abc".to_string().chars().collect()), &("abcd".to_string().chars().collect())));
+    assert_eq!(3, dmp.diff_common_overlap(&("abc".to_string().chars().collect::<Vec<_>>()), &("abcd".to_string().chars().collect::<Vec<_>>())));
 
-    assert_eq!(0, dmp.diff_common_overlap(&("123456".to_string().chars().collect()), &("abcd".to_string().chars().collect())));
+    assert_eq!(0, dmp.diff_common_overlap(&("123456".to_string().chars().collect::<Vec<_>>()), &("abcd".to_string().chars().collect::<Vec<_>>())));
 
-    assert_eq!(3, dmp.diff_common_overlap(&("123456xxx".to_string().chars().collect()), &("xxxabcd".to_string().chars().collect())));
+    assert_eq!(3, dmp.diff_common_overlap(&("123456xxx".to_string().chars().collect::<Vec<_>>()), &("xxxabcd".to_string().chars().collect::<Vec<_>>())));
 }
 
 #[test]
@@ -80,9 +80,9 @@ pub fn test_diff_half_match_no_timeout() {
 pub fn test_diff_lines_tochars() {
     let dmp = diff_match_patch::Dmp::new();
     assert_eq!(("\x01\x02\x01".to_string(), "\x02\x01\x02".to_string(), vec!["".to_string(), "alpha\n".to_string(), "beta\n".to_string()]),
-                dmp.diff_lines_tochars(&("alpha\nbeta\nalpha\n".to_string().chars().collect()), &("beta\nalpha\nbeta\n".to_string().chars().collect())));
-    assert_eq!(("".to_string(), "\x01\x02\x03\x03".to_string(), vec!["".to_string(), "alpha\r\n".to_string(), "beta\r\n".to_string(), "\r\n".to_string()]), dmp.diff_lines_tochars(&("".to_string().chars().collect()), &("alpha\r\nbeta\r\n\r\n\r\n".to_string().chars().collect())));
-    assert_eq!(("\x01".to_string(), "\x02".to_string(), vec!["".to_string(), "a".to_string(), "b".to_string()]), dmp.diff_lines_tochars(&("a".to_string().chars().collect()), &("b".to_string().chars().collect())));
+                dmp.diff_lines_tochars(&("alpha\nbeta\nalpha\n".to_string().chars().collect::<Vec<_>>()), &("beta\nalpha\nbeta\n".to_string().chars().collect::<Vec<_>>())));
+    assert_eq!(("".to_string(), "\x01\x02\x03\x03".to_string(), vec!["".to_string(), "alpha\r\n".to_string(), "beta\r\n".to_string(), "\r\n".to_string()]), dmp.diff_lines_tochars(&("".to_string().chars().collect::<Vec<_>>()), &("alpha\r\nbeta\r\n\r\n\r\n".to_string().chars().collect::<Vec<_>>())));
+    assert_eq!(("\x01".to_string(), "\x02".to_string(), vec!["".to_string(), "a".to_string(), "b".to_string()]), dmp.diff_lines_tochars(&("a".to_string().chars().collect::<Vec<_>>()), &("b".to_string().chars().collect::<Vec<_>>())));
     let n: u32 = 300;
     let mut line_list: Vec<String> = vec![];
     let mut char_list: Vec<char> = vec![];
@@ -638,7 +638,7 @@ pub fn test_diff_bisect() {
     let mut dmp = diff_match_patch::Dmp::new();
     let a = "cat".to_string();
     let b = "map".to_string();
-    assert_eq!(vec![diff_match_patch::Diff::new(-1, "c".to_string()), diff_match_patch::Diff::new(1, "m".to_string()), diff_match_patch::Diff::new(0, "a".to_string()), diff_match_patch::Diff::new(-1, "t".to_string()), diff_match_patch::Diff::new(1, "p".to_string())] , dmp.diff_bisect(&a.chars().collect(), &b.chars().collect()));
+    assert_eq!(vec![diff_match_patch::Diff::new(-1, "c".to_string()), diff_match_patch::Diff::new(1, "m".to_string()), diff_match_patch::Diff::new(0, "a".to_string()), diff_match_patch::Diff::new(-1, "t".to_string()), diff_match_patch::Diff::new(1, "p".to_string())] , dmp.diff_bisect(&a.chars().collect::<Vec<_>>(), &b.chars().collect::<Vec<_>>()));
 }
 
 #[test]
@@ -654,7 +654,7 @@ pub fn test_diff_bisect_timeout() {
         diff_match_patch::Diff::new(1, "map".to_string())
     ];
 
-    let result = dmp.diff_bisect(&a.chars().collect(), &b.chars().collect());
+    let result = dmp.diff_bisect(&a.chars().collect::<Vec<_>>(), &b.chars().collect::<Vec<_>>());
 
     assert_eq!(expected, result);
 }
@@ -701,11 +701,11 @@ pub fn test_match_apphabet() {
     s.insert('a', 4);
     s.insert('b', 2);
     s.insert('c', 1);
-    assert_eq!(s, dmp.match_alphabet(&("abc".chars().collect())));
+    assert_eq!(s, dmp.match_alphabet(&("abc".chars().collect::<Vec<_>>())));
     s.insert('a', 37);
     s.insert('b', 18);
     s.insert('c', 8);
-    assert_eq!(s, dmp.match_alphabet(&("abcaba".chars().collect())));
+    assert_eq!(s, dmp.match_alphabet(&("abcaba".chars().collect::<Vec<_>>())));
 }
 
 
@@ -714,49 +714,49 @@ pub fn test_match_bitap() {
     let mut dmp = diff_match_patch::Dmp::new();
     dmp.match_distance = 100;
     dmp.match_threshold = 0.5;
-    assert_eq!(5, dmp.match_bitap(&("abcdefghijk".chars().collect()), &("fgh".chars().collect()), 5));
-    assert_eq!(5, dmp.match_bitap(&("abcdefghijk".chars().collect()), &("fgh".chars().collect()), 0));
+    assert_eq!(5, dmp.match_bitap(&("abcdefghijk".chars().collect::<Vec<_>>()), &("fgh".chars().collect::<Vec<_>>()), 5));
+    assert_eq!(5, dmp.match_bitap(&("abcdefghijk".chars().collect::<Vec<_>>()), &("fgh".chars().collect::<Vec<_>>()), 0));
 
     // Fuzzy matches.
-    assert_eq!(4, dmp.match_bitap(&("abcdefghijk".chars().collect()), &("efxhi".chars().collect()), 0));
+    assert_eq!(4, dmp.match_bitap(&("abcdefghijk".chars().collect::<Vec<_>>()), &("efxhi".chars().collect::<Vec<_>>()), 0));
 
-    assert_eq!(2, dmp.match_bitap(&("abcdefghijk".chars().collect()), &("cdefxyhijk".chars().collect()), 5));
+    assert_eq!(2, dmp.match_bitap(&("abcdefghijk".chars().collect::<Vec<_>>()), &("cdefxyhijk".chars().collect::<Vec<_>>()), 5));
 
-    assert_eq!(-1, dmp.match_bitap(&("abcdefghijk".chars().collect()), &("bxy".chars().collect()), 1));
+    assert_eq!(-1, dmp.match_bitap(&("abcdefghijk".chars().collect::<Vec<_>>()), &("bxy".chars().collect::<Vec<_>>()), 1));
 
     // Overflow.
-    assert_eq!(2, dmp.match_bitap(&("123456789xx0".chars().collect()), &("3456789x0".chars().collect()), 2));
+    assert_eq!(2, dmp.match_bitap(&("123456789xx0".chars().collect::<Vec<_>>()), &("3456789x0".chars().collect::<Vec<_>>()), 2));
 
-    assert_eq!(0, dmp.match_bitap(&("abcdef".chars().collect()), &("xxabc".chars().collect()), 4));
+    assert_eq!(0, dmp.match_bitap(&("abcdef".chars().collect::<Vec<_>>()), &("xxabc".chars().collect::<Vec<_>>()), 4));
 
-    assert_eq!(3, dmp.match_bitap(&("abcdef".chars().collect()), &("defyy".chars().collect()), 4));
+    assert_eq!(3, dmp.match_bitap(&("abcdef".chars().collect::<Vec<_>>()), &("defyy".chars().collect::<Vec<_>>()), 4));
 
-    assert_eq!(0, dmp.match_bitap(&("abcdef".chars().collect()), &("xabcdefy".chars().collect()), 0));
+    assert_eq!(0, dmp.match_bitap(&("abcdef".chars().collect::<Vec<_>>()), &("xabcdefy".chars().collect::<Vec<_>>()), 0));
 
     // Threshold test.
     dmp.match_threshold = 0.4;
-    assert_eq!(4, dmp.match_bitap(&("abcdefghijk".chars().collect()), &("efxyhi".chars().collect()), 1));
+    assert_eq!(4, dmp.match_bitap(&("abcdefghijk".chars().collect::<Vec<_>>()), &("efxyhi".chars().collect::<Vec<_>>()), 1));
 
     dmp.match_threshold = 0.3;
-    assert_eq!(-1, dmp.match_bitap(&("abcdefghijk".chars().collect()), &("efxyhi".chars().collect()), 1));
+    assert_eq!(-1, dmp.match_bitap(&("abcdefghijk".chars().collect::<Vec<_>>()), &("efxyhi".chars().collect::<Vec<_>>()), 1));
 
     dmp.match_threshold = 0.0;
-    assert_eq!(1, dmp.match_bitap(&("abcdefghijk".chars().collect()), &("bcdef".chars().collect()), 1));
+    assert_eq!(1, dmp.match_bitap(&("abcdefghijk".chars().collect::<Vec<_>>()), &("bcdef".chars().collect::<Vec<_>>()), 1));
     dmp.match_threshold = 0.5;
 
     // Multiple select.
-    assert_eq!(0, dmp.match_bitap(&("abcdexyzabcde".chars().collect()), &("abccde".chars().collect()), 3));
+    assert_eq!(0, dmp.match_bitap(&("abcdexyzabcde".chars().collect::<Vec<_>>()), &("abccde".chars().collect::<Vec<_>>()), 3));
 
-    assert_eq!(8, dmp.match_bitap(&("abcdexyzabcde".chars().collect()), &("abccde".chars().collect()), 5));
+    assert_eq!(8, dmp.match_bitap(&("abcdexyzabcde".chars().collect::<Vec<_>>()), &("abccde".chars().collect::<Vec<_>>()), 5));
 
     // Distance test.
     dmp.match_distance = 10;
-    assert_eq!(-1, dmp.match_bitap(&("abcdefghijklmnopqrstuvwxyz".chars().collect()), &("abcdefg".chars().collect()), 24));
+    assert_eq!(-1, dmp.match_bitap(&("abcdefghijklmnopqrstuvwxyz".chars().collect::<Vec<_>>()), &("abcdefg".chars().collect::<Vec<_>>()), 24));
 
-    assert_eq!(0, dmp.match_bitap(&("abcdefghijklmnopqrstuvwxyz".chars().collect()), &("abcdxxefg".chars().collect()), 1));
+    assert_eq!(0, dmp.match_bitap(&("abcdefghijklmnopqrstuvwxyz".chars().collect::<Vec<_>>()), &("abcdxxefg".chars().collect::<Vec<_>>()), 1));
 
     dmp.match_distance = 1000;
-    assert_eq!(0, dmp.match_bitap(&("abcdefghijklmnopqrstuvwxyz".chars().collect()), &("abcdefg".chars().collect()), 24));
+    assert_eq!(0, dmp.match_bitap(&("abcdefghijklmnopqrstuvwxyz".chars().collect::<Vec<_>>()), &("abcdefg".chars().collect::<Vec<_>>()), 24));
 
 
 }
@@ -830,22 +830,22 @@ pub fn test_patch_add_context()
     let mut dmp = diff_match_patch::Dmp::new();
     dmp.patch_margin = 4;
     let mut p = dmp.patch_from_text("@@ -21,4 +21,10 @@\n-jump\n+somersault\n".to_string())[0].clone();
-    dmp.patch_add_context(&mut p, &mut ("The quick brown fox jumps over the lazy dog.".chars().collect()));
+    dmp.patch_add_context(&mut p, &mut ("The quick brown fox jumps over the lazy dog.".chars().collect::<Vec<_>>()));
     assert_eq!(p.to_string(), "@@ -17,12 +17,18 @@\n fox \n-jump\n+somersault\n s ov\n".to_string());
 
     // Same, but not enough trailing context.
     p = dmp.patch_from_text("@@ -21,4 +21,10 @@\n-jump\n+somersault\n".to_string())[0].clone();
-    dmp.patch_add_context(&mut p, &mut ("The quick brown fox jumps.".chars().collect()));
+    dmp.patch_add_context(&mut p, &mut ("The quick brown fox jumps.".chars().collect::<Vec<_>>()));
     assert_eq!(p.to_string(), "@@ -17,10 +17,16 @@\n fox \n-jump\n+somersault\n s.\n".to_string());
 
     // Same, but not enough leading context.
     let mut p = dmp.patch_from_text("@@ -3 +3,2 @@\n-e\n+at\n".to_string())[0].clone();
-    dmp.patch_add_context(&mut p, &mut ("The quick brown fox jumps.".chars().collect()));
+    dmp.patch_add_context(&mut p, &mut ("The quick brown fox jumps.".chars().collect::<Vec<_>>()));
     assert_eq!(p.to_string(), "@@ -1,7 +1,8 @@\n Th\n-e\n+at\n  qui\n".to_string());
 
     // # Same, but with ambiguity.
     p = dmp.patch_from_text("@@ -3 +3,2 @@\n-e\n+at\n".to_string())[0].clone();
-    dmp.patch_add_context(&mut p, &mut ("The quick brown fox jumps.  The quick brown fox crashes.".chars().collect()));
+    dmp.patch_add_context(&mut p, &mut ("The quick brown fox jumps.  The quick brown fox crashes.".chars().collect::<Vec<_>>()));
     assert_eq!(p.to_string(), "@@ -1,27 +1,28 @@\n Th\n-e\n+at\n  quick brown fox jumps. \n".to_string());
 }
 

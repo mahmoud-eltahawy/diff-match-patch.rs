@@ -34,7 +34,7 @@ use std::fmt;
 
          // continuation bytes thus only contribute six bits each
          // these data bits are found with the bit mask xx11 1111
-         byte2 = byte2 & 0x3F;
+         byte2 &= 0x3F;
 
          // in two-byte sequences the first byte has bitmask 110x xxxx
          if (byte1 & 0xE0) == 0xC0 {
@@ -50,7 +50,7 @@ use std::fmt;
              return Err(DecodeError.into());
          }
 
-         byte3 = byte3 & 0x3F;
+         byte3 &= 0x3F;
 
          // in three-byte sequences the first byte has bitmask 1110 xxxx
          if (byte1 & 0xF0) == 0xE0 {
@@ -67,7 +67,7 @@ use std::fmt;
              return Err(DecodeError.into());
          }
 
-         byte4 = byte4 & 0x3F;
+         byte4 &= 0x3F;
 
          // in four-byte sequences the first byte has bitmask 1111 0xxx
          if (byte1 & 0xF8) == 0xF0 {
@@ -77,7 +77,7 @@ use std::fmt;
              // byte4                      __tt tttt
              // value       xxxyy yyyyzz zzzztt tttt -> 21 bits
              let mut code_point = ((byte1 as u32 & 0x07) << 0x12) | ((byte2 as u32) << 0x0C) | ((byte3 as u32) << 0x06) | byte4 as u32;
-             if code_point >= 0x010000 && code_point <= 0x10FFFF {
+             if (0x010000..0x10FFFF).contains(&code_point)  {
                  code_point -= 0x010000;
 
                  result.push((((code_point >> 10) & 0x3FF) | 0xD800) as u16);
