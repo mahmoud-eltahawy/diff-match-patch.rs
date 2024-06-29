@@ -222,7 +222,7 @@ impl Dmp {
     }
 
     #[allow(dead_code)]
-    pub fn diff_main(&mut self, text1: &str, text2: &str, checklines: bool) -> Vec<Diff> {
+    pub fn diff_main(&self, text1: &str, text2: &str, checklines: bool) -> Vec<Diff> {
         /*
         Find the differences between two chars.  Simplifies the problem by
         stripping any common prefix or suffix off the texts before diffing.
@@ -240,7 +240,7 @@ impl Dmp {
         self.diff_main_internal(text1, text2, checklines, Instant::now())
     }
 
-    fn diff_main_internal(&mut self, text1: &str, text2: &str, checklines: bool, start_time: Instant) -> Vec<Diff> {
+    fn diff_main_internal(&self, text1: &str, text2: &str, checklines: bool, start_time: Instant) -> Vec<Diff> {
         // check for empty text
         if text1.is_empty() && text2.is_empty() {
             return vec![];
@@ -291,7 +291,7 @@ impl Dmp {
         diffs
     }
 
-    fn diff_compute(&mut self, text1: &Vec<char>, text2: &Vec<char>, checklines: bool, start_time: Instant) -> Vec<Diff> {
+    fn diff_compute(&self, text1: &Vec<char>, text2: &Vec<char>, checklines: bool, start_time: Instant) -> Vec<Diff> {
         /*
         Find the differences between two texts.  Assumes that the texts do not
         have any common prefix or suffix.
@@ -384,7 +384,7 @@ impl Dmp {
         self.diff_bisect_internal(text1, text2, start_time)
     }
     
-    fn kmp(&mut self, text1: &Vec<char>, text2: &Vec<char>, ind: usize) -> i32 {
+    fn kmp(&self, text1: &Vec<char>, text2: &Vec<char>, ind: usize) -> i32 {
         /*
         Find the first index after a specific index in text1 where patern is present.
 
@@ -524,11 +524,11 @@ impl Dmp {
         self.diff_linemode_internal(text1, text2, Instant::now())
     }
 
-    fn diff_linemode_internal(&mut self, text1: &Vec<char>, text2: &Vec<char>, start_time: Instant) -> Vec<Diff> {
+    fn diff_linemode_internal(&self, text1: &Vec<char>, text2: &Vec<char>, start_time: Instant) -> Vec<Diff> {
         // Scan the text on a line-by-line basis first.
         let (text3, text4, linearray) = self.diff_lines_tochars(text1, text2);
         
-        let mut dmp = Dmp::new();
+        let dmp = Dmp::new();
         let mut diffs: Vec<Diff> = dmp.diff_main_internal(text3.as_str(), text4.as_str(), false, start_time);
         
         // Convert the diff back to original text.
@@ -602,7 +602,7 @@ impl Dmp {
         self.diff_bisect_internal(char1, char2, Instant::now())
     }
 
-    fn diff_bisect_internal(&mut self, char1: &Vec<char>, char2: &Vec<char>, start_time: Instant) -> Vec<Diff> {       
+    fn diff_bisect_internal(&self, char1: &Vec<char>, char2: &Vec<char>, start_time: Instant) -> Vec<Diff> {       
         let text1_length = char1.len() as i32;
         let text2_length = char2.len() as i32;
         let max_d: i32 = (text1_length + text2_length + 1)/2;
@@ -749,7 +749,7 @@ impl Dmp {
         vec![Diff::new(-1, char1.iter().collect()), Diff::new(1, char2.iter().collect())]
     }
 
-    fn diff_bisect_split(&mut self, text1: &Vec<char>, text2: &Vec<char>, x: i32, y: i32, start_time: Instant) -> Vec<Diff> {
+    fn diff_bisect_split(&self, text1: &Vec<char>, text2: &Vec<char>, x: i32, y: i32, start_time: Instant) -> Vec<Diff> {
         /*
         Given the location of the 'middle snake', split the diff in two parts
         and recurse.
@@ -839,7 +839,7 @@ impl Dmp {
         char::from_u32(wordhash[word]).unwrap().to_string()
     }
    
-    pub fn diff_lines_tochars(&mut self, text1: &Vec<char>, text2: &Vec<char>) -> (String, String, Vec<String>) {
+    pub fn diff_lines_tochars(&self, text1: &Vec<char>, text2: &Vec<char>) -> (String, String, Vec<String>) {
         /*
         Split two texts into an array of strings.  Reduce the texts to a string
         of hashes where each Unicode character represents one line.
@@ -857,12 +857,12 @@ impl Dmp {
         let mut linearray: Vec<String> = vec!["".to_string()];
         let mut linehash: HashMap<String, i32> = HashMap::new();
         let chars1 = self.diff_lines_tochars_munge(text1, &mut linearray, &mut linehash);
-        let mut dmp = Dmp::new();
+        let dmp = Dmp::new();
         let chars2 = dmp.diff_lines_tochars_munge(text2, &mut linearray, &mut linehash);
         (chars1, chars2, linearray)
     }
 
-    pub fn diff_lines_tochars_munge(&mut self, text: &Vec<char>, linearray: &mut Vec<String>, linehash: &mut HashMap<String, i32>) -> String {
+    pub fn diff_lines_tochars_munge(&self, text: &Vec<char>, linearray: &mut Vec<String>, linehash: &mut HashMap<String, i32>) -> String {
         /*
         Split a text into an array of strings.  Reduce the texts to a string
         of hashes where each Unicode character represents one line.
@@ -918,7 +918,7 @@ impl Dmp {
         chars
     }
 
-    pub fn diff_chars_tolines(&mut self, diffs: &mut Vec<Diff>, line_array: &Vec<String> ) {
+    pub fn diff_chars_tolines(&self, diffs: &mut Vec<Diff>, line_array: &Vec<String> ) {
         /*
         Rehydrate the text in a diff from a string of line hashes to real lines
         of text.
@@ -938,7 +938,7 @@ impl Dmp {
         }
     }
 
-    pub fn diff_common_prefix(&mut self, text1: &Vec<char>, text2: &Vec<char>) -> i32 {
+    pub fn diff_common_prefix(&self, text1: &Vec<char>, text2: &Vec<char>) -> i32 {
         /*
         Determine the common prefix of two chars.
 
@@ -966,7 +966,7 @@ impl Dmp {
         pointermax
     }
 
-    pub fn diff_common_suffix(&mut self, text1: &Vec<char>, text2: &Vec<char>) -> i32 {
+    pub fn diff_common_suffix(&self, text1: &Vec<char>, text2: &Vec<char>) -> i32 {
         /*
         Determine the common suffix of two strings.
 
@@ -996,7 +996,7 @@ impl Dmp {
         len
     }
 
-    pub fn diff_common_overlap(&mut self, text1: &Vec<char>, text2: &Vec<char>) -> i32 {
+    pub fn diff_common_overlap(&self, text1: &Vec<char>, text2: &Vec<char>) -> i32 {
         /*
         Determine if the suffix of one chars is the prefix of another.
 
@@ -1013,8 +1013,8 @@ impl Dmp {
         if text1_length == 0 || text2_length == 0 {
             return 0;
         }
-        let mut text1_trunc;
-        let mut text2_trunc;
+        let text1_trunc;
+        let text2_trunc;
         let len = min(text1_length as i32, text2_length as i32);
 
         // Truncate the longer chars.
@@ -1090,7 +1090,7 @@ impl Dmp {
         temp1
     }
 
-    pub fn diff_half_match(&mut self, text1: &Vec<char>, text2: &Vec<char>) -> Vec<String> {
+    pub fn diff_half_match(&self, text1: &Vec<char>, text2: &Vec<char>) -> Vec<String> {
         /* Do the two texts share a substring which is at least half the length of
         the longer text?
         This speedup can produce non-minimal diffs.
@@ -1160,7 +1160,7 @@ impl Dmp {
         hm
     }
 
-    fn diff_half_matchi(&mut self, long_text: &Vec<char>, short_text: &Vec<char>, i: i32) -> Vec<String> {
+    fn diff_half_matchi(&self, long_text: &Vec<char>, short_text: &Vec<char>, i: i32) -> Vec<String> {
         /*
         Does a substring of shorttext exist within longtext such that the
         substring is at least half the length of longtext?
@@ -1201,7 +1201,7 @@ impl Dmp {
         }
         vec![]
     }
-    pub fn diff_cleanup_semantic(&mut self, diffs: &mut Vec<Diff>) {
+    pub fn diff_cleanup_semantic(&self, diffs: &mut Vec<Diff>) {
         /*
         Reduce the number of edits by eliminating semantically trivial
         equalities.
@@ -1307,7 +1307,7 @@ impl Dmp {
         } 
     }
 
-    pub fn diff_cleanup_semantic_lossless(&mut self, diffs: &mut Vec<Diff>) {
+    pub fn diff_cleanup_semantic_lossless(&self, diffs: &mut Vec<Diff>) {
         /*
         Look for single edits surrounded on both sides by equalities
         which can be shifted sideways to align the edit to a word boundary.
@@ -1400,7 +1400,7 @@ impl Dmp {
         }
     }
 
-    fn diff_cleanup_semantic_score(&mut self, one: &Vec<char>, two: &Vec<char>) -> i32 {
+    fn diff_cleanup_semantic_score(&self, one: &Vec<char>, two: &Vec<char>) -> i32 {
         /*
         Given two strings, compute a score representing whether the
         internal boundary falls on logical boundaries.
@@ -1567,7 +1567,7 @@ impl Dmp {
         }
     }
 
-    pub fn diff_cleanup_merge(&mut self, diffs: &mut Vec<Diff>) {
+    pub fn diff_cleanup_merge(&self, diffs: &mut Vec<Diff>) {
         /*
         Reorder and merge like edit sections.  Merge equalities.
         Any edit section can move as long as it doesn't cross an equality.
@@ -1703,7 +1703,7 @@ impl Dmp {
         }
     }
 
-    fn endswith(&mut self, first: &Vec<char>, second: &Vec<char>) -> bool {
+    fn endswith(&self, first: &Vec<char>, second: &Vec<char>) -> bool {
         /*
         It will check if first chars vector is endswith second chars vector or not.
         
@@ -1728,7 +1728,7 @@ impl Dmp {
         true
     }
 
-    fn startswith(&mut self, first: &Vec<char>, second: &Vec<char>) -> bool {
+    fn startswith(&self, first: &Vec<char>, second: &Vec<char>) -> bool {
         /*
         It will check if first chars vector is startswith second chars vector or not.
         
