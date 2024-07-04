@@ -333,7 +333,7 @@ pub fn test_diff_lines_tochars() {
 
 #[test]
 pub fn test_diff_words_tochars() {
-    let mut dmp = Dmp::new();
+    let dmp = Dmp::new();
     assert_eq!(
         (
             "\x01\x02\x03\x02\x01".to_string(),
@@ -1064,7 +1064,7 @@ pub fn test_diff_text2_u16() {
 
 #[test]
 pub fn test_diff_delta() {
-    let mut dmp = Dmp::new();
+    let dmp = Dmp::new();
     let mut diffs = vec![
         Diff::Keep("jump".to_string()),
         Diff::Delete("s".to_string()),
@@ -1806,7 +1806,7 @@ pub fn test_patch_add_context() {
 
 #[test]
 pub fn test_patch_make() {
-    let mut dmp = Dmp::new();
+    let dmp = Dmp::new();
     // Null case.
     let mut patches = dmp.patch_make1("", "");
     assert_eq!("".to_string(), dmp.patch_to_text(&mut patches));

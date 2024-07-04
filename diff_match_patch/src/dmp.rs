@@ -749,11 +749,7 @@ impl Dmp {
     ///     Three element tuple, containing the encoded text1, the encoded text2 and
     ///     the array of unique strings.  The zeroth element of the array of unique
     ///     strings is intentionally blank.
-    pub fn diff_words_tochars(
-        &mut self,
-        text1: &str,
-        text2: &str,
-    ) -> (String, String, Vec<String>) {
+    pub fn diff_words_tochars(&self, text1: &str, text2: &str) -> (String, String, Vec<String>) {
         let mut wordarray: Vec<String> = vec!["".to_string()];
         let mut wordhash: HashMap<String, u32> = HashMap::new();
         let chars1 = self.diff_words_tochars_munge(text1, &mut wordarray, &mut wordhash);
@@ -2343,7 +2339,7 @@ impl Dmp {
     ///     diffs: Vector od diff object.
     /// Returns:
     ///     Vector of Patch objects.
-    pub fn patch_make2(&mut self, diffs: &mut Vec<Diff>) -> Vec<Patch> {
+    pub fn patch_make2(&self, diffs: &mut Vec<Diff>) -> Vec<Patch> {
         let text1 = self.diff_text1(diffs);
         self.patch_make4(text1.as_str(), diffs)
     }
@@ -2357,7 +2353,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Vector of Patch objects.
-    pub fn patch_make3(&mut self, text1: &str, _text2: &str, diffs: &mut [Diff]) -> Vec<Patch> {
+    pub fn patch_make3(&self, text1: &str, _text2: &str, diffs: &mut [Diff]) -> Vec<Patch> {
         self.patch_make4(text1, diffs)
     }
     /// Compute a list of patches to turn text1 into text2.
