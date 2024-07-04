@@ -1080,9 +1080,9 @@ impl Dmp {
 
         let mut hm: Vec<String>;
         //First check if the second quarter is the seed for a half-match.
-        let hm1 = self.diff_half_matchi(long_text, short_text, (len2 as i32 + 3) / 4);
+        let hm1 = self.diff_half_matchi(long_text, short_text, (len2 + 3) / 4);
         // Check again based on the third quarter.
-        let hm2 = self.diff_half_matchi(long_text, short_text, (len2 as i32 + 1) / 2);
+        let hm2 = self.diff_half_matchi(long_text, short_text, (len2 + 1) / 2);
 
         if hm1.is_empty() && hm2.is_empty() {
             return vec![];
@@ -1125,13 +1125,9 @@ impl Dmp {
     ///     Five element vector, containing the prefix of longtext, the suffix of
     ///     longtext, the prefix of shorttext, the suffix of shorttext and the
     ///     common middle.  Or empty vector if there was no match.
-    fn diff_half_matchi(&self, long_text: &[char], short_text: &[char], i: i32) -> Vec<String> {
+    fn diff_half_matchi(&self, long_text: &[char], short_text: &[char], i: usize) -> Vec<String> {
         let long_len = long_text.len();
-        let seed = Vec::from_iter(
-            long_text[(i as usize)..(i as usize + long_len / 4)]
-                .iter()
-                .cloned(),
-        );
+        let seed = Vec::from_iter(long_text[i..(i + long_len / 4)].iter().cloned());
         let mut best_common = "".to_string();
         let mut best_longtext_a = "".to_string();
         let mut best_longtext_b = "".to_string();
@@ -1139,16 +1135,14 @@ impl Dmp {
         let mut best_shorttext_b = "".to_string();
         let mut jk = self.kmp(short_text, &seed, 0);
         while let Some(j) = jk {
-            let prefix_length =
-                self.diff_common_prefix(&long_text[(i as usize)..], &short_text[j..]);
-            let suffix_length =
-                self.diff_common_suffix(&long_text[..(i as usize)], &short_text[..j]);
+            let prefix_length = self.diff_common_prefix(&long_text[i..], &short_text[j..]);
+            let suffix_length = self.diff_common_suffix(&long_text[..i], &short_text[..j]);
             if best_common.len() < suffix_length + prefix_length {
                 best_common = short_text[(j - suffix_length)..(j + prefix_length)]
                     .iter()
                     .collect();
-                best_longtext_a = long_text[..(i as usize - suffix_length)].iter().collect();
-                best_longtext_b = long_text[(i as usize + prefix_length)..].iter().collect();
+                best_longtext_a = long_text[..(i - suffix_length)].iter().collect();
+                best_longtext_b = long_text[(i + prefix_length)..].iter().collect();
                 best_shorttext_a = short_text[..(j - suffix_length)].iter().collect();
                 best_shorttext_b = short_text[(j + prefix_length)..].iter().collect();
             }
