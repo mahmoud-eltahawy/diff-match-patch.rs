@@ -420,7 +420,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     the last index where patern is found or -1 if not found.
-    fn rkmp(&mut self, text1: &[char], text2: &[char], end: usize) -> Option<usize> {
+    fn rkmp(&self, text1: &[char], text2: &[char], end: usize) -> Option<usize> {
         if text2.is_empty() {
             return Some(end);
         }
@@ -476,7 +476,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Vector of diffs as changes.
-    pub fn diff_linemode(&mut self, text1: &[char], text2: &[char]) -> Vec<Diff> {
+    pub fn diff_linemode(&self, text1: &[char], text2: &[char]) -> Vec<Diff> {
         self.diff_linemode_internal(text1, text2, Instant::now())
     }
 
@@ -562,7 +562,7 @@ impl Dmp {
     ///
     /// Returns:
     ///         Vector of diffs as changes.
-    pub fn diff_bisect(&mut self, char1: &[char], char2: &[char]) -> Vec<Diff> {
+    pub fn diff_bisect(&self, char1: &[char], char2: &[char]) -> Vec<Diff> {
         self.diff_bisect_internal(char1, char2, Instant::now())
     }
 
@@ -757,7 +757,7 @@ impl Dmp {
         let mut wordarray: Vec<String> = vec!["".to_string()];
         let mut wordhash: HashMap<String, u32> = HashMap::new();
         let chars1 = self.diff_words_tochars_munge(text1, &mut wordarray, &mut wordhash);
-        let mut dmp = Dmp::new();
+        let dmp = Dmp::new();
         let chars2 = dmp.diff_words_tochars_munge(text2, &mut wordarray, &mut wordhash);
         (chars1, chars2, wordarray)
     }
@@ -772,7 +772,7 @@ impl Dmp {
     /// Returns:
     ///     Encoded string.
     pub fn diff_words_tochars_munge(
-        &mut self,
+        &self,
         text: &str,
         wordarray: &mut Vec<String>,
         wordhash: &mut HashMap<String, u32>,
@@ -798,7 +798,7 @@ impl Dmp {
     }
 
     fn make_token_dict(
-        &mut self,
+        &self,
         word: &str,
         wordarray: &mut Vec<String>,
         wordhash: &mut HashMap<String, u32>,
@@ -1021,7 +1021,7 @@ impl Dmp {
     //
     // Returns:
     //     Vector of string after spliting according to character.
-    pub fn split_by_char(&mut self, text: &str, ch: char) -> Vec<String> {
+    pub fn split_by_char(&self, text: &str, ch: char) -> Vec<String> {
         let temp: Vec<&str> = text.split(ch).collect();
         let mut temp1: Vec<String> = vec![];
         for temp_item in &temp {
@@ -1037,7 +1037,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Vector of string after spliting according to characters.
-    pub fn split_by_chars(&mut self, text: &str) -> Vec<String> {
+    pub fn split_by_chars(&self, text: &str) -> Vec<String> {
         let temp: Vec<&str> = text.split("@@ ").collect();
         let mut temp1: Vec<String> = vec![];
         for temp_item in &temp {
@@ -1471,7 +1471,7 @@ impl Dmp {
     ///
     /// Args:
     ///     diffs: Vector of diff object.
-    pub fn diff_cleanup_efficiency(&mut self, diffs: &mut Vec<Diff>) {
+    pub fn diff_cleanup_efficiency(&self, diffs: &mut Vec<Diff>) {
         if diffs.is_empty() {
             return;
         }
@@ -1766,7 +1766,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Location within text2.
-    pub fn diff_xindex(&mut self, diffs: &Vec<Diff>, loc: i32) -> i32 {
+    pub fn diff_xindex(&self, diffs: &Vec<Diff>, loc: i32) -> i32 {
         let mut chars1 = 0;
         let mut chars2 = 0;
         let mut last_chars1 = 0;
@@ -1805,7 +1805,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Source text.
-    pub fn diff_text1(&mut self, diffs: &mut Vec<Diff>) -> String {
+    pub fn diff_text1(&self, diffs: &mut Vec<Diff>) -> String {
         let mut text: String = "".to_string();
         for adiff in diffs {
             if let Diff::Keep(txt) | Diff::Delete(txt) = adiff {
@@ -1822,7 +1822,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     destination text.
-    pub fn diff_text2(&mut self, diffs: &mut Vec<Diff>) -> String {
+    pub fn diff_text2(&self, diffs: &mut Vec<Diff>) -> String {
         let mut text: String = "".to_string();
         for adiff in diffs {
             if let Diff::Keep(txt) | Diff::Add(txt) = adiff {
@@ -1887,7 +1887,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Number of changes.
-    pub fn diff_levenshtein(&mut self, diffs: &Vec<Diff>) -> i32 {
+    pub fn diff_levenshtein(&self, diffs: &Vec<Diff>) -> i32 {
         let mut levenshtein = 0;
         let mut insertions = 0;
         let mut deletions = 0;
@@ -1911,7 +1911,7 @@ impl Dmp {
         levenshtein
     }
 
-    pub fn diff_todelta(&mut self, diffs: &mut [Diff]) -> String {
+    pub fn diff_todelta(&self, diffs: &mut [Diff]) -> String {
         self.diff_todelta_unit(diffs, LengthUnit::UnicodeScalar)
     }
 
@@ -1929,7 +1929,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Delta text.
-    pub fn diff_todelta_unit(&mut self, diffs: &mut [Diff], length_unit: LengthUnit) -> String {
+    pub fn diff_todelta_unit(&self, diffs: &mut [Diff], length_unit: LengthUnit) -> String {
         let mut text: String = "".to_string();
         let len = diffs.len();
         for (k, diffs_item) in diffs.iter().enumerate() {
@@ -1979,7 +1979,7 @@ impl Dmp {
         text
     }
 
-    pub fn diff_from_delta(&mut self, text1: &str, delta: &str) -> Vec<Diff> {
+    pub fn diff_from_delta(&self, text1: &str, delta: &str) -> Vec<Diff> {
         self.diff_from_delta_unit(text1, delta, LengthUnit::UnicodeScalar)
     }
 
@@ -1997,7 +1997,7 @@ impl Dmp {
     /// Raises:
     ///     ValueError: If invalid input.
     pub fn diff_from_delta_unit(
-        &mut self,
+        &self,
         text1: &str,
         delta: &str,
         length_unit: LengthUnit,
@@ -2074,7 +2074,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Best match index or -1.
-    pub fn match_main(&mut self, text1: &str, patern1: &str, mut loc: i32) -> i32 {
+    pub fn match_main(&self, text1: &str, patern1: &str, mut loc: i32) -> i32 {
         loc = max(0, min(loc, text1.len() as i32));
         if patern1.is_empty() {
             return loc;
@@ -2106,7 +2106,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Best match index or -1.
-    pub fn match_bitap(&mut self, text: &[char], patern: &[char], loc: i32) -> i32 {
+    pub fn match_bitap(&self, text: &[char], patern: &[char], loc: i32) -> i32 {
         // check for maxbits limit.
         if !(self.match_maxbits == 0 || patern.len() as i32 <= self.match_maxbits) {
             panic!("patern too long for this application");
@@ -2226,7 +2226,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Overall score for match (0.0 = good, 1.0 = bad).
-    pub fn match_bitap_score(&mut self, e: i32, x: i32, loc: i32, patern: &[char]) -> f32 {
+    pub fn match_bitap_score(&self, e: i32, x: i32, loc: i32, patern: &[char]) -> f32 {
         let accuracy: f32 = (e as f32) / (patern.len() as f32);
         let proximity: i32 = (loc - x).abs();
         if self.match_distance == 0 {
@@ -2246,7 +2246,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Hash of character locations.
-    pub fn match_alphabet(&mut self, patern: &[char]) -> HashMap<char, i32> {
+    pub fn match_alphabet(&self, patern: &[char]) -> HashMap<char, i32> {
         let mut s: HashMap<char, i32> = HashMap::new();
         for patern_item in patern {
             s.insert(*patern_item, 0);
@@ -2268,7 +2268,7 @@ impl Dmp {
     /// Args:
     ///     patch: The patch to grow.
     ///     text: Source text.
-    pub fn patch_add_context(&mut self, patch: &mut Patch, text: &mut [char]) {
+    pub fn patch_add_context(&self, patch: &mut Patch, text: &mut [char]) {
         if text.is_empty() {
             return;
         }
@@ -2327,7 +2327,7 @@ impl Dmp {
     ///     text2: Second string.
     /// Returns:
     ///     Vector of Patch objects.
-    pub fn patch_make1(&mut self, text1: &str, text2: &str) -> Vec<Patch> {
+    pub fn patch_make1(&self, text1: &str, text2: &str) -> Vec<Patch> {
         let mut diffs: Vec<Diff> = self.diff_main(text1, text2, true);
         if diffs.len() > 2 {
             self.diff_cleanup_semantic(&mut diffs);
@@ -2367,7 +2367,7 @@ impl Dmp {
     ///     diffs: Vector of diff object.
     /// Returns:
     ///     Array of Patch objects.
-    pub fn patch_make4(&mut self, text1: &str, diffs: &mut [Diff]) -> Vec<Patch> {
+    pub fn patch_make4(&self, text1: &str, diffs: &mut [Diff]) -> Vec<Patch> {
         let mut patches: Vec<Patch> = vec![];
         if diffs.is_empty() {
             return patches; // Get rid of the None case.
@@ -2455,7 +2455,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Vector of Patch objects.
-    pub fn patch_deep_copy(&mut self, patches: &mut Vec<Patch>) -> Vec<Patch> {
+    pub fn patch_deep_copy(&self, patches: &mut Vec<Patch>) -> Vec<Patch> {
         let mut patches_copy: Vec<Patch> = vec![];
         for patches_item in patches {
             let mut patch_copy = Patch::new(vec![], 0, 0, 0, 0);
@@ -2483,7 +2483,7 @@ impl Dmp {
     /// Returns:
     ///     Two element Vector, containing the new chars and an Vector of boolean values.
     pub fn patch_apply(
-        &mut self,
+        &self,
         patches: &mut Vec<Patch>,
         source_text: &str,
     ) -> (Vec<char>, Vec<bool>) {
@@ -2631,7 +2631,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     The padding chars added to each side.
-    pub fn patch_add_padding(&mut self, patches: &mut [Patch]) -> Vec<char> {
+    pub fn patch_add_padding(&self, patches: &mut [Patch]) -> Vec<char> {
         let padding_length = self.patch_margin;
         let mut nullpadding: Vec<char> = vec![];
         for i in 0..padding_length {
@@ -2700,7 +2700,7 @@ impl Dmp {
     ///
     /// Args:
     ///     patches: Array of Patch objects.
-    pub fn patch_splitmax(&mut self, patches: &mut Vec<Patch>) {
+    pub fn patch_splitmax(&self, patches: &mut Vec<Patch>) {
         let patch_size = self.match_maxbits;
         if patch_size == 0 {
             return;
@@ -2826,7 +2826,7 @@ impl Dmp {
     ///
     /// Returns:
     ///     Text representation of patches.
-    pub fn patch_to_text(&mut self, patches: &mut Vec<Patch>) -> String {
+    pub fn patch_to_text(&self, patches: &mut Vec<Patch>) -> String {
         let mut text: String = "".to_string();
         for patches_item in patches {
             text += (patches_item.to_string()).as_str();
@@ -2845,7 +2845,7 @@ impl Dmp {
     ///
     /// Raises:
     ///     ValueError: If invalid input.
-    pub fn patch_from_text(&mut self, textline: String) -> Vec<Patch> {
+    pub fn patch_from_text(&self, textline: String) -> Vec<Patch> {
         let text: Vec<String> = self.split_by_chars(textline.as_str());
         let mut patches: Vec<Patch> = vec![];
         for (i, text_item) in text.iter().enumerate() {
@@ -2860,7 +2860,7 @@ impl Dmp {
         patches
     }
 
-    pub fn patch1_from_text(&mut self, textline: String) -> Patch {
+    pub fn patch1_from_text(&self, textline: String) -> Patch {
         let text: Vec<String> = self.split_by_char(textline.as_str(), '\n');
         let mut text_vec: Vec<char> = text[0].chars().collect();
         if text_vec.len() < 8
