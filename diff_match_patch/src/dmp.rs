@@ -6,7 +6,7 @@ Applies the patch onto another text, allowing for errors.
 
 use core::char;
 use regex::Regex;
-use std::cmp::max;
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{self, Display};
@@ -108,13 +108,6 @@ impl Patch {
             length2,
         }
     }
-}
-fn min(x: i32, y: i32) -> i32 {
-    // return minimum element.
-    if x > y {
-        return y;
-    }
-    x
 }
 
 fn min1(x: f32, y: f32) -> f32 {
@@ -247,12 +240,12 @@ impl Dmp {
         let text2: Vec<char> = text2.chars().collect();
 
         let commonlength = self.diff_common_prefix(&text1, &text2);
-        let (commonprefix, text1) = text1.split_at(commonlength as usize);
-        let (_, text2) = text2.split_at(commonlength as usize);
+        let (commonprefix, text1) = text1.split_at(commonlength);
+        let (_, text2) = text2.split_at(commonlength);
 
         let commonlength = self.diff_common_suffix(text1, text2);
-        let (text1, commonsuffix) = text1.split_at(text1.len() - commonlength as usize);
-        let (text2, _) = text2.split_at(text2.len() - commonlength as usize);
+        let (text1, commonsuffix) = text1.split_at(text1.len() - commonlength);
+        let (text2, _) = text2.split_at(text2.len() - commonlength);
 
         let mut diffs: Vec<Diff> = Vec::new();
 
@@ -430,9 +423,9 @@ impl Dmp {
     ///
     /// Returns:
     ///     the last index where patern is found or -1 if not found.
-    fn rkmp(&mut self, text1: &[char], text2: &[char], ind: usize) -> Option<usize> {
+    fn rkmp(&mut self, text1: &[char], text2: &[char], end: usize) -> Option<usize> {
         if text2.is_empty() {
-            return Some(ind);
+            return Some(end);
         }
         if text1.is_empty() {
             return None;
@@ -456,15 +449,15 @@ impl Dmp {
                 len = patern[len - 1];
             }
         }
-        i = 0;
-        len = 0;
-        let mut ans: i32 = -1;
-        while i <= ind {
+        let mut i = 0;
+        let mut len = 0;
+        let mut ans = None::<usize>;
+        while i <= end {
             if text1[i] == text2[len] {
                 len += 1;
                 i += 1;
                 if len == len2 {
-                    ans = (i - len) as i32;
+                    ans = Some(i - len);
                     len = patern[len - 1];
                 }
             } else if len == 0 {
@@ -473,11 +466,7 @@ impl Dmp {
                 len = patern[len - 1];
             }
         }
-        if ans == -1 {
-            None
-        } else {
-            Some(ans as usize)
-        }
+        ans
     }
 
     /// Do a quick line-level diff on both chars, then rediff the parts for
@@ -934,14 +923,14 @@ impl Dmp {
     ///
     /// Returns:
     ///     The number of characters common to the start of each chars.
-    pub fn diff_common_prefix(&self, text1: &[char], text2: &[char]) -> i32 {
+    pub fn diff_common_prefix(&self, text1: &[char], text2: &[char]) -> usize {
         if text1.is_empty() || text2.is_empty() {
             return 0;
         }
-        let pointermax = min(text1.len() as i32, text2.len() as i32);
+        let pointermax = min(text1.len(), text2.len());
         let mut pointerstart = 0;
         while pointerstart < pointermax {
-            if text1[pointerstart as usize] == text2[pointerstart as usize] {
+            if text1[pointerstart] == text2[pointerstart] {
                 pointerstart += 1;
             } else {
                 return pointerstart;
@@ -958,21 +947,21 @@ impl Dmp {
     ///
     /// Returns:
     ///     The number of characters common to the end of each chars.
-    pub fn diff_common_suffix(&self, text1: &[char], text2: &[char]) -> i32 {
+    pub fn diff_common_suffix(&self, text1: &[char], text2: &[char]) -> usize {
         if text1.is_empty() || text2.is_empty() {
             return 0;
         }
-        let mut pointer_1 = text1.len() as i32 - 1;
-        let mut pointer_2 = text2.len() as i32 - 1;
+        let mut out_pointer_1 = text1.len().checked_sub(1);
+        let mut out_pointer_2 = text2.len().checked_sub(1);
         let mut len = 0;
-        while pointer_1 >= 0 && pointer_2 >= 0 {
-            if text1[pointer_1 as usize] == text2[pointer_2 as usize] {
+        while let (Some(pointer_1), Some(pointer_2)) = (out_pointer_1, out_pointer_2) {
+            if text1[pointer_1] == text2[pointer_2] {
                 len += 1;
             } else {
                 break;
             }
-            pointer_1 -= 1;
-            pointer_2 -= 1;
+            out_pointer_1 = pointer_1.checked_sub(1);
+            out_pointer_2 = pointer_2.checked_sub(1);
         }
         len
     }
@@ -1154,15 +1143,14 @@ impl Dmp {
                 self.diff_common_prefix(&long_text[(i as usize)..], &short_text[j..]);
             let suffix_length =
                 self.diff_common_suffix(&long_text[..(i as usize)], &short_text[..j]);
-            if best_common.len() < suffix_length as usize + prefix_length as usize {
-                best_common = short_text
-                    [(j - suffix_length as usize)..(j + prefix_length as usize)]
+            if best_common.len() < suffix_length + prefix_length {
+                best_common = short_text[(j - suffix_length)..(j + prefix_length)]
                     .iter()
                     .collect();
-                best_longtext_a = long_text[..((i - suffix_length) as usize)].iter().collect();
-                best_longtext_b = long_text[((i + prefix_length) as usize)..].iter().collect();
-                best_shorttext_a = short_text[..(j - suffix_length as usize)].iter().collect();
-                best_shorttext_b = short_text[(j + prefix_length as usize)..].iter().collect();
+                best_longtext_a = long_text[..(i as usize - suffix_length)].iter().collect();
+                best_longtext_b = long_text[(i as usize + prefix_length)..].iter().collect();
+                best_shorttext_a = short_text[..(j - suffix_length)].iter().collect();
+                best_shorttext_b = short_text[(j + prefix_length)..].iter().collect();
             }
             jk = self.kmp(short_text, &seed, j + 1);
         }
@@ -1350,13 +1338,13 @@ impl Dmp {
                 // First, shift the edit as far left as possible.
                 common_offset = self.diff_common_suffix(&equality1_vec, &edit_vec);
                 if common_offset != 0 {
-                    common_string = edit_vec[(edit_vec.len() - common_offset as usize)..]
+                    common_string = edit_vec[(edit_vec.len() - common_offset)..]
                         .iter()
                         .collect();
-                    equality1 = equality1_vec[..(equality1_vec.len() - common_offset as usize)]
+                    equality1 = equality1_vec[..(equality1_vec.len() - common_offset)]
                         .iter()
                         .collect();
-                    let temp7: String = edit_vec[..(edit_vec.len() - common_offset as usize)]
+                    let temp7: String = edit_vec[..(edit_vec.len() - common_offset)]
                         .iter()
                         .collect();
                     edit = common_string.clone() + temp7.as_str();
@@ -1626,11 +1614,9 @@ impl Dmp {
                         let mut insert_vec: Vec<char> = text_insert.chars().collect();
                         if count_delete > 0 && count_insert > 0 {
                             // Factor out any common prefixies.
-                            let mut commonlength =
-                                self.diff_common_prefix(&insert_vec, &delete_vec);
+                            let commonlength = self.diff_common_prefix(&insert_vec, &delete_vec);
                             if commonlength != 0 {
-                                let temp1: String =
-                                    (&insert_vec)[..(commonlength as usize)].iter().collect();
+                                let temp1: String = (&insert_vec)[..commonlength].iter().collect();
                                 let x = i - count_delete - count_insert - 1;
                                 if x >= 0 && matches!(diffs[x as usize], Diff::Keep(_)) {
                                     diffs[x as usize] = diffs[x as usize].with_text(
@@ -1640,24 +1626,22 @@ impl Dmp {
                                     diffs.insert(0, Diff::Keep(temp1));
                                     i += 1;
                                 }
-                                insert_vec = insert_vec[(commonlength as usize)..].to_vec();
-                                delete_vec = delete_vec[(commonlength as usize)..].to_vec();
+                                insert_vec = insert_vec[commonlength..].to_vec();
+                                delete_vec = delete_vec[commonlength..].to_vec();
                             }
 
                             // Factor out any common suffixies.
-                            commonlength = self.diff_common_suffix(&insert_vec, &delete_vec);
+                            let commonlength = self.diff_common_suffix(&insert_vec, &delete_vec);
                             if commonlength != 0 {
                                 let temp1: String = (&insert_vec)
-                                    [(insert_vec.len() - commonlength as usize)..]
+                                    [(insert_vec.len() - commonlength)..]
                                     .iter()
                                     .collect();
                                 diffs[i as usize] = diffs[i as usize].with_text(temp1 + &txt);
-                                insert_vec = insert_vec
-                                    [..(insert_vec.len() - commonlength as usize)]
-                                    .to_vec();
-                                delete_vec = delete_vec
-                                    [..(delete_vec.len() - commonlength as usize)]
-                                    .to_vec();
+                                insert_vec =
+                                    insert_vec[..(insert_vec.len() - commonlength)].to_vec();
+                                delete_vec =
+                                    delete_vec[..(delete_vec.len() - commonlength)].to_vec();
                             }
                         }
 
