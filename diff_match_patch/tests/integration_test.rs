@@ -117,71 +117,80 @@ pub fn test_diff_half_match() {
     assert_eq!(
         temp,
         dmp.diff_half_match(
-            &("1234567890".to_string().chars().collect()),
-            &("abcdef".to_string().chars().collect())
+            &("1234567890".to_string().chars().collect::<Vec<_>>()),
+            &("abcdef".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
         temp,
         dmp.diff_half_match(
-            &("12345".to_string().chars().collect()),
-            &("23".to_string().chars().collect())
+            &("12345".to_string().chars().collect::<Vec<_>>()),
+            &("23".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
         dmp.split_by_char("12,90,a,z,345678", ','),
         dmp.diff_half_match(
-            &("1234567890".to_string().chars().collect()),
-            &("a345678z".to_string().chars().collect())
+            &("1234567890".to_string().chars().collect::<Vec<_>>()),
+            &("a345678z".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
         dmp.split_by_char("a,z,12,90,345678", ','),
         dmp.diff_half_match(
-            &("a345678z".to_string().chars().collect()),
-            &("1234567890".to_string().chars().collect())
+            &("a345678z".to_string().chars().collect::<Vec<_>>()),
+            &("1234567890".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
         dmp.split_by_char("abc,z,1234,0,56789", ','),
         dmp.diff_half_match(
-            &("abc56789z".to_string().chars().collect()),
-            &("1234567890".to_string().chars().collect())
+            &("abc56789z".to_string().chars().collect::<Vec<_>>()),
+            &("1234567890".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
         dmp.split_by_char("a,xyz,1,7890,23456", ','),
         dmp.diff_half_match(
-            &("a23456xyz".to_string().chars().collect()),
-            &("1234567890".to_string().chars().collect())
+            &("a23456xyz".to_string().chars().collect::<Vec<_>>()),
+            &("1234567890".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
         dmp.split_by_char("12123,123121,a,z,1234123451234", ','),
         dmp.diff_half_match(
-            &("121231234123451234123121".to_string().chars().collect()),
-            &("a1234123451234z".to_string().chars().collect())
+            &("121231234123451234123121"
+                .to_string()
+                .chars()
+                .collect::<Vec<_>>()),
+            &("a1234123451234z".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
         dmp.split_by_char(",-=-=-=-=-=,x,,x-=-=-=-=-=-=-=", ','),
         dmp.diff_half_match(
-            &("x-=-=-=-=-=-=-=-=-=-=-=-=".to_string().chars().collect()),
-            &("xx-=-=-=-=-=-=-=".to_string().chars().collect())
+            &("x-=-=-=-=-=-=-=-=-=-=-=-="
+                .to_string()
+                .chars()
+                .collect::<Vec<_>>()),
+            &("xx-=-=-=-=-=-=-=".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
         dmp.split_by_char("-=-=-=-=-=,,,y,-=-=-=-=-=-=-=y", ','),
         dmp.diff_half_match(
-            &("-=-=-=-=-=-=-=-=-=-=-=-=y".to_string().chars().collect()),
-            &("-=-=-=-=-=-=-=yy".to_string().chars().collect())
+            &("-=-=-=-=-=-=-=-=-=-=-=-=y"
+                .to_string()
+                .chars()
+                .collect::<Vec<_>>()),
+            &("-=-=-=-=-=-=-=yy".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
         dmp.split_by_char("qHillo,w,x,Hulloy,HelloHe", ','),
         dmp.diff_half_match(
-            &("qHilloHelloHew".to_string().chars().collect()),
-            &("xHelloHeHulloy".to_string().chars().collect())
+            &("qHilloHelloHew".to_string().chars().collect::<Vec<_>>()),
+            &("xHelloHeHulloy".to_string().chars().collect::<Vec<_>>())
         )
     );
 }
@@ -194,8 +203,8 @@ pub fn test_diff_half_match_no_timeout() {
     assert_eq!(
         empty_vec,
         dmp.diff_half_match(
-            &("qHilloHelloHew".to_string().chars().collect()),
-            &("xHelloHeHulloy".to_string().chars().collect())
+            &("qHilloHelloHew".to_string().chars().collect::<Vec<_>>()),
+            &("xHelloHeHulloy".to_string().chars().collect::<Vec<_>>())
         )
     );
 }

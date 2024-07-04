@@ -226,37 +226,34 @@ impl Dmp {
         checklines: bool,
         start_time: Instant,
     ) -> Vec<Diff> {
-        // check for empty text
-        if text1.is_empty() && text2.is_empty() {
-            return vec![];
-        } else if text1.is_empty() {
-            return vec![Diff::Add(text2.to_string())];
-        } else if text2.is_empty() {
-            return vec![Diff::Delete(text1.to_string())];
-        }
+        match (text1.is_empty(), text2.is_empty()) {
+            (true, true) => {
+                return vec![];
+            }
+            (true, false) => {
+                return vec![Diff::Add(text2.to_string())];
+            }
+            (false, true) => {
+                return vec![Diff::Delete(text1.to_string())];
+            }
+            (false, false) => {
+                if text1 == text2 {
+                    return vec![Diff::Keep(text1.to_string())];
+                }
+            }
+        };
 
-        // check for equality
-        if text1 == text2 {
-            return vec![Diff::Keep(text1.to_string())];
-        }
+        let text1: Vec<char> = text1.chars().collect();
+        let text2: Vec<char> = text2.chars().collect();
 
-        let mut char1: Vec<char> = text1.chars().collect();
-        let mut char2: Vec<char> = text2.chars().collect();
-        // Trim off common prefix (speedup).
-        let mut commonlength = self.diff_common_prefix(&char1, &char2) as usize;
-        let commonprefix = Vec::from_iter(char1[0..commonlength].iter().cloned());
-        char1 = Vec::from_iter(char1[commonlength..].iter().cloned());
-        char2 = Vec::from_iter(char2[commonlength..].iter().cloned());
+        let commonlength = self.diff_common_prefix(&text1, &text2);
+        let (commonprefix, text1) = text1.split_at(commonlength as usize);
+        let (_, text2) = text2.split_at(commonlength as usize);
 
-        // Trim off common suffix (speedup).
-        commonlength = self.diff_common_suffix(&char1, &char2) as usize;
-        let commonsuffix = Vec::from_iter(
-            char1[(char1.len() - commonlength)..char1.len()]
-                .iter()
-                .cloned(),
-        );
-        char1 = Vec::from_iter(char1[..(char1.len() - commonlength)].iter().cloned());
-        char2 = Vec::from_iter(char2[..(char2.len() - commonlength)].iter().cloned());
+        let commonlength = self.diff_common_suffix(text1, text2);
+        let (text1, commonsuffix) = text1.split_at(text1.len() - commonlength as usize);
+        let (text2, _) = text2.split_at(text2.len() - commonlength as usize);
+
         let mut diffs: Vec<Diff> = Vec::new();
 
         //Restore the prefix
@@ -265,10 +262,8 @@ impl Dmp {
         }
 
         // Compute the diff on the middle block.
-        let temp = self.diff_compute(&char1, &char2, checklines, start_time);
-        for z in temp {
-            diffs.push(z);
-        }
+        let middle_diffs = self.diff_compute(text1, text2, checklines, start_time);
+        diffs.extend(middle_diffs);
 
         // Restore the suffix
         if !commonsuffix.is_empty() {
@@ -292,8 +287,8 @@ impl Dmp {
     ///     Vector of diffs as changes.
     fn diff_compute(
         &self,
-        text1: &Vec<char>,
-        text2: &Vec<char>,
+        text1: &[char],
+        text2: &[char],
         checklines: bool,
         start_time: Instant,
     ) -> Vec<Diff> {
@@ -1077,7 +1072,7 @@ impl Dmp {
     /// Five element Vector, containing the prefix of text1, the suffix of text1,
     /// the prefix of text2, the suffix of text2 and the common middle.  Or empty vector
     /// if there was no match.
-    pub fn diff_half_match(&self, text1: &Vec<char>, text2: &Vec<char>) -> Vec<String> {
+    pub fn diff_half_match(&self, text1: &[char], text2: &[char]) -> Vec<String> {
         // Don't risk returning a non-optimal diff if we have unlimited time.
         if self.diff_timeout.is_none() {
             return vec![];
