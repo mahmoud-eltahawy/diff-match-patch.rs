@@ -57,6 +57,8 @@ pub enum Diff {
     Keep(String),
     Delete(String),
 }
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Patch {
     //patch object
     pub diffs: Vec<Diff>,
@@ -104,17 +106,6 @@ impl Diff {
             Diff::Keep(t) => Diff::Keep(t.clone() + text),
             Diff::Delete(t) => Diff::Delete(t.clone() + text),
         };
-    }
-}
-
-impl PartialEq for Patch {
-    // it will return if two patch objects are equal or not.
-    fn eq(&self, other: &Self) -> bool {
-        (self.diffs == other.diffs)
-            & (self.start1 == other.start1)
-            & (self.start2 == other.start2)
-            & (self.length1 == other.length1)
-            & (self.length2 == other.length2)
     }
 }
 
@@ -167,16 +158,6 @@ fn find_char(cha: char, text: &[char], start: usize) -> i32 {
         }
     }
     -1
-}
-
-impl fmt::Debug for Patch {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{{diffs:\n {:?},\n start1: {},\n start2: {},\n length1: {},\n length2: {} }}",
-            self.diffs, self.start1, self.start2, self.length1, self.length2
-        )
-    }
 }
 
 trait StringView {
@@ -3164,18 +3145,6 @@ impl Dmp {
             }
         }
         patch
-    }
-}
-
-impl Clone for Patch {
-    fn clone(&self) -> Self {
-        Patch {
-            diffs: self.diffs.clone(),
-            start1: self.start1,
-            start2: self.start2,
-            length1: self.length1,
-            length2: self.length2,
-        }
     }
 }
 
