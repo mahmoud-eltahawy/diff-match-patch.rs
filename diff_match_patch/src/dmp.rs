@@ -20,13 +20,10 @@ use super::percent_encoding::percent_decode_u16;
 use url::percent_encoding::{percent_decode, utf8_percent_encode, USERINFO_ENCODE_SET};
 
 pub enum LengthUnit {
-    #[allow(dead_code)]
     UnicodeScalar,
-    #[allow(dead_code)]
     UTF16,
 }
 
-#[allow(dead_code)]
 pub struct Dmp {
     // Number of seconds to map a diff before giving up (None for infinity).
     pub diff_timeout: Option<f32>,
@@ -102,7 +99,6 @@ impl Diff {
 
 impl Patch {
     // A new diff patch object created.
-    #[allow(dead_code)]
     pub fn new(diffs: Vec<Diff>, start1: i32, start2: i32, length1: i32, length2: i32) -> Patch {
         Patch {
             diffs,
@@ -113,7 +109,6 @@ impl Patch {
         }
     }
 }
-#[allow(dead_code)]
 fn min(x: i32, y: i32) -> i32 {
     // return minimum element.
     if x > y {
@@ -122,7 +117,6 @@ fn min(x: i32, y: i32) -> i32 {
     x
 }
 
-#[allow(dead_code)]
 fn min1(x: f32, y: f32) -> f32 {
     // return minimum element.
     if x > y {
@@ -131,7 +125,6 @@ fn min1(x: f32, y: f32) -> f32 {
     x
 }
 
-#[allow(dead_code)]
 fn find_char(cha: char, text: &[char], start: usize) -> i32 {
     // it will return the first index of a character after a index or return -1 if not found.
     for (i, text_item) in text.iter().enumerate().skip(start) {
@@ -152,7 +145,6 @@ struct StringScalarView {
 }
 
 impl StringScalarView {
-    #[allow(dead_code)]
     pub fn new(text: &str) -> StringScalarView {
         StringScalarView {
             text: text.chars().collect(),
@@ -175,7 +167,6 @@ struct StringUTF16View {
 }
 
 impl StringUTF16View {
-    #[allow(dead_code)]
     pub fn new(text: &str) -> StringUTF16View {
         StringUTF16View {
             text: text.encode_utf16().collect(),
@@ -200,7 +191,6 @@ impl Default for Dmp {
 }
 
 impl Dmp {
-    #[allow(dead_code)]
     pub fn new() -> Self {
         // it will give a new dmp object.
         Dmp {
@@ -214,22 +204,18 @@ impl Dmp {
         }
     }
 
-    #[allow(dead_code)]
+    /// Find the differences between two chars.  Simplifies the problem by
+    /// stripping any common prefix or suffix off the texts before diffing.
+    ///
+    /// Args:
+    ///     text1: Old chars to be diffed.
+    ///     text2: New chars to be diffed.
+    ///     checklines: Optional speedup flag. If present and false, then don't run
+    ///         a line-level diff first to identify the changed areas.
+    ///         Defaults to true, which does a faster, slightly less optimal diff.
+    /// Returns:
+    ///     Vector of diffs as changes.
     pub fn diff_main(&self, text1: &str, text2: &str, checklines: bool) -> Vec<Diff> {
-        /*
-        Find the differences between two chars.  Simplifies the problem by
-        stripping any common prefix or suffix off the texts before diffing.
-
-        Args:
-            text1: Old chars to be diffed.
-            text2: New chars to be diffed.
-            checklines: Optional speedup flag. If present and false, then don't run
-                a line-level diff first to identify the changed areas.
-                Defaults to true, which does a faster, slightly less optimal diff.
-        Returns:
-            Vector of diffs as changes.
-        */
-
         self.diff_main_internal(text1, text2, checklines, Instant::now())
     }
 
@@ -292,6 +278,18 @@ impl Dmp {
         diffs
     }
 
+    /// Find the differences between two texts.  Assumes that the texts do not
+    /// have any common prefix or suffix.
+    ///
+    /// Args:
+    ///     text1: Old chars to be diffed.
+    ///     text2: New chars to be diffed.
+    ///     checklines: Speedup flag.  If false, then don't run a line-level diff
+    ///     first to identify the changed areas.
+    ///     If true, then run a faster, slightly less optimal diff.
+    ///
+    /// Returns:
+    ///     Vector of diffs as changes.
     fn diff_compute(
         &self,
         text1: &Vec<char>,
@@ -299,21 +297,6 @@ impl Dmp {
         checklines: bool,
         start_time: Instant,
     ) -> Vec<Diff> {
-        /*
-        Find the differences between two texts.  Assumes that the texts do not
-        have any common prefix or suffix.
-
-        Args:
-            text1: Old chars to be diffed.
-            text2: New chars to be diffed.
-            checklines: Speedup flag.  If false, then don't run a line-level diff
-            first to identify the changed areas.
-            If true, then run a faster, slightly less optimal diff.
-
-        Returns:
-            Vector of diffs as changes.
-        */
-
         let mut diffs: Vec<Diff> = Vec::new();
         if text1.is_empty() {
             // Just add some text (speedup).
@@ -393,19 +376,16 @@ impl Dmp {
         self.diff_bisect_internal(text1, text2, start_time)
     }
 
+    /// Find the first index after a specific index in text1 where patern is present.
+    ///
+    /// Args:
+    ///     text1: Parent chars.
+    ///     text2: Patern chars.
+    ///     ind: index after which we have to find the patern.
+    ///
+    /// Returns:
+    ///     the first index where patern is found or -1 if not found.
     fn kmp(&self, text1: &[char], text2: &[char], ind: usize) -> i32 {
-        /*
-        Find the first index after a specific index in text1 where patern is present.
-
-        Args:
-            text1: Parent chars.
-            text2: Patern chars.
-            ind: index after which we have to find the patern.
-
-        Returns:
-            the first index where patern is found or -1 if not found.
-        */
-
         if text2.is_empty() {
             return ind as i32;
         }
@@ -450,18 +430,16 @@ impl Dmp {
         -1
     }
 
+    /// Find the last index before a specific index in text1 where patern is present.
+    ///
+    /// Args:
+    ///     text1: Parent chars.
+    ///     text2: Patern chars.
+    ///     ind: index just before we have to find the patern.
+    ///
+    /// Returns:
+    ///     the last index where patern is found or -1 if not found.
     fn rkmp(&mut self, text1: &[char], text2: &[char], ind: usize) -> i32 {
-        /*
-        Find the last index before a specific index in text1 where patern is present.
-
-        Args:
-            text1: Parent chars.
-            text2: Patern chars.
-            ind: index just before we have to find the patern.
-
-        Returns:
-            the last index where patern is found or -1 if not found.
-        */
         if text2.is_empty() {
             return ind as i32;
         }
@@ -507,21 +485,17 @@ impl Dmp {
         ans
     }
 
-    #[allow(dead_code)]
+    /// Do a quick line-level diff on both chars, then rediff the parts for
+    /// greater accuracy.
+    /// This speedup can produce non-minimal diffs.
+    ///
+    /// Args:
+    ///     text1: Old chars to be diffed.
+    ///     text2: New chars to be diffed.
+    ///
+    /// Returns:
+    ///     Vector of diffs as changes.
     pub fn diff_linemode(&mut self, text1: &[char], text2: &[char]) -> Vec<Diff> {
-        /*
-        Do a quick line-level diff on both chars, then rediff the parts for
-        greater accuracy.
-        This speedup can produce non-minimal diffs.
-
-        Args:
-            text1: Old chars to be diffed.
-            text2: New chars to be diffed.
-
-        Returns:
-            Vector of diffs as changes.
-        */
-
         self.diff_linemode_internal(text1, text2, Instant::now())
     }
 
@@ -597,21 +571,17 @@ impl Dmp {
         temp
     }
 
-    #[allow(dead_code)]
+    /// Find the 'middle snake' of a diff, split the problem in two
+    /// and return the recursively constructed diff.
+    /// See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.
+    ///
+    /// Args:
+    ///     text1: Old chars to be diffed.
+    ///     text2: New chars to be diffed.
+    ///
+    /// Returns:
+    ///         Vector of diffs as changes.
     pub fn diff_bisect(&mut self, char1: &[char], char2: &[char]) -> Vec<Diff> {
-        /*
-        Find the 'middle snake' of a diff, split the problem in two
-        and return the recursively constructed diff.
-        See Myers 1986 paper: An O(ND) Difference Algorithm and Its Variations.
-
-        Args:
-            text1: Old chars to be diffed.
-            text2: New chars to be diffed.
-
-        Returns:
-                Vector of diffs as changes.
-        */
-
         self.diff_bisect_internal(char1, char2, Instant::now())
     }
 
@@ -754,6 +724,17 @@ impl Dmp {
         ]
     }
 
+    /// Given the location of the 'middle snake', split the diff in two parts
+    /// and recurse.
+    ///
+    /// Args:
+    ///     text1: Old text1 to be diffed.
+    ///     text2: New text1 to be diffed.
+    ///     x: Index of split point in text1.
+    ///     y: Index of split point in text2.
+    ///
+    /// Returns:
+    ///         Vector of diffs as changes.
     fn diff_bisect_split(
         &self,
         text1: &[char],
@@ -762,20 +743,6 @@ impl Dmp {
         y: i32,
         start_time: Instant,
     ) -> Vec<Diff> {
-        /*
-        Given the location of the 'middle snake', split the diff in two parts
-        and recurse.
-
-        Args:
-            text1: Old text1 to be diffed.
-            text2: New text1 to be diffed.
-            x: Index of split point in text1.
-            y: Index of split point in text2.
-
-        Returns:
-                Vector of diffs as changes.
-        */
-
         let text1a: String = text1[..(x as usize)].iter().collect();
         let text2a: String = text2[..(y as usize)].iter().collect();
         let text1b: String = text1[(x as usize)..].iter().collect();
@@ -790,25 +757,22 @@ impl Dmp {
         diffs
     }
 
+    /// Split two texts into an array of strings.  Reduce the texts to a string
+    /// of hashes where each Unicode character represents one word.
+    ///
+    /// Args:
+    ///     text1: First chars.
+    ///     text2: Second chars.
+    ///
+    /// Returns:
+    ///     Three element tuple, containing the encoded text1, the encoded text2 and
+    ///     the array of unique strings.  The zeroth element of the array of unique
+    ///     strings is intentionally blank.
     pub fn diff_words_tochars(
         &mut self,
         text1: &str,
         text2: &str,
     ) -> (String, String, Vec<String>) {
-        /*
-        Split two texts into an array of strings.  Reduce the texts to a string
-        of hashes where each Unicode character represents one word.
-
-        Args:
-            text1: First chars.
-            text2: Second chars.
-
-        Returns:
-            Three element tuple, containing the encoded text1, the encoded text2 and
-            the array of unique strings.  The zeroth element of the array of unique
-            strings is intentionally blank.
-        */
-
         let mut wordarray: Vec<String> = vec!["".to_string()];
         let mut wordhash: HashMap<String, u32> = HashMap::new();
         let chars1 = self.diff_words_tochars_munge(text1, &mut wordarray, &mut wordhash);
@@ -817,23 +781,21 @@ impl Dmp {
         (chars1, chars2, wordarray)
     }
 
+    /// Split a text into an array of strings.  Reduce the texts to a string
+    /// of hashes where each Unicode character represents one word.
+    /// Modifies wordarray and wordhash through being a closure.
+    ///
+    /// Args:
+    ///     text: chars to encode.
+    ///
+    /// Returns:
+    ///     Encoded string.
     pub fn diff_words_tochars_munge(
         &mut self,
         text: &str,
         wordarray: &mut Vec<String>,
         wordhash: &mut HashMap<String, u32>,
     ) -> String {
-        /*
-        Split a text into an array of strings.  Reduce the texts to a string
-        of hashes where each Unicode character represents one word.
-        Modifies wordarray and wordhash through being a closure.
-
-        Args:
-            text: chars to encode.
-
-        Returns:
-            Encoded string.
-        */
         let mut chars = "".to_string();
 
         let re = Regex::new(r"[\s\n\r]").unwrap();
@@ -867,25 +829,22 @@ impl Dmp {
         char::from_u32(wordhash[word]).unwrap().to_string()
     }
 
+    /// Split two texts into an array of strings.  Reduce the texts to a string
+    /// of hashes where each Unicode character represents one line.
+    ///
+    /// Args:
+    ///     text1: First chars.
+    ///     text2: Second chars.
+    ///
+    /// Returns:
+    ///     Three element tuple, containing the encoded text1, the encoded text2 and
+    ///     the array of unique strings.  The zeroth element of the array of unique
+    ///     strings is intentionally blank.
     pub fn diff_lines_tochars(
         &self,
         text1: &[char],
         text2: &[char],
     ) -> (String, String, Vec<String>) {
-        /*
-        Split two texts into an array of strings.  Reduce the texts to a string
-        of hashes where each Unicode character represents one line.
-
-        Args:
-            text1: First chars.
-            text2: Second chars.
-
-        Returns:
-            Three element tuple, containing the encoded text1, the encoded text2 and
-            the array of unique strings.  The zeroth element of the array of unique
-            strings is intentionally blank.
-        */
-
         let mut linearray: Vec<String> = vec!["".to_string()];
         let mut linehash: HashMap<String, i32> = HashMap::new();
         let chars1 = self.diff_lines_tochars_munge(text1, &mut linearray, &mut linehash);
@@ -894,23 +853,21 @@ impl Dmp {
         (chars1, chars2, linearray)
     }
 
+    /// Split a text into an array of strings.  Reduce the texts to a string
+    /// of hashes where each Unicode character represents one line.
+    /// Modifies linearray and linehash through being a closure.
+    ///
+    /// Args:
+    ///     text: chars to encode.
+    ///
+    /// Returns:
+    ///     Encoded string.
     pub fn diff_lines_tochars_munge(
         &self,
         text: &[char],
         linearray: &mut Vec<String>,
         linehash: &mut HashMap<String, i32>,
     ) -> String {
-        /*
-        Split a text into an array of strings.  Reduce the texts to a string
-        of hashes where each Unicode character represents one line.
-        Modifies linearray and linehash through being a closure.
-
-        Args:
-            text: chars to encode.
-
-        Returns:
-            Encoded string.
-        */
         let mut chars = "".to_string();
         // Walk the text, pulling out a substring for each line.
         // text.split('\n') would would temporarily double our memory footprint.
@@ -956,15 +913,13 @@ impl Dmp {
         chars
     }
 
+    /// Rehydrate the text in a diff from a string of line hashes to real lines
+    /// of text.
+    ///
+    /// Args:
+    ///     diffs: Vector of diffs as changes.
+    ///     lineArray: Vector of unique strings.
     pub fn diff_chars_tolines(&self, diffs: &mut [Diff], line_array: &[String]) {
-        /*
-        Rehydrate the text in a diff from a string of line hashes to real lines
-        of text.
-
-        Args:
-            diffs: Vector of diffs as changes.
-            lineArray: Vector of unique strings.
-        */
         for diff in diffs.iter_mut() {
             let mut text: String = "".to_string();
             let text1 = diff.text().clone();
@@ -976,18 +931,15 @@ impl Dmp {
         }
     }
 
+    /// Determine the common prefix of two chars.
+    ///
+    /// Args:
+    ///     text1: First chars.
+    ///     text2: Second chars.
+    ///
+    /// Returns:
+    ///     The number of characters common to the start of each chars.
     pub fn diff_common_prefix(&self, text1: &[char], text2: &[char]) -> i32 {
-        /*
-          Determine the common prefix of two chars.
-
-          Args:
-              text1: First chars.
-              text2: Second chars.
-
-          Returns:
-              The number of characters common to the start of each chars.
-        */
-
         if text1.is_empty() || text2.is_empty() {
             return 0;
         }
@@ -1003,17 +955,15 @@ impl Dmp {
         pointermax
     }
 
+    /// Determine the common suffix of two strings.
+    ///
+    /// Args:
+    ///     text1: First chars.
+    ///     text2: Second chars.
+    ///
+    /// Returns:
+    ///     The number of characters common to the end of each chars.
     pub fn diff_common_suffix(&self, text1: &[char], text2: &[char]) -> i32 {
-        /*
-          Determine the common suffix of two strings.
-
-          Args:
-              text1: First chars.
-              text2: Second chars.
-
-          Returns:
-              The number of characters common to the end of each chars.
-        */
         if text1.is_empty() || text2.is_empty() {
             return 0;
         }
@@ -1032,18 +982,16 @@ impl Dmp {
         len
     }
 
+    /// Determine if the suffix of one chars is the prefix of another.
+    ///
+    /// Args:
+    ///     text1 First chars.
+    ///     text2 Second chars.
+    ///
+    /// Returns:
+    ///     The number of characters common to the end of the first
+    ///     chars and the start of the second chars.
     pub fn diff_common_overlap(&self, text1: &[char], text2: &[char]) -> i32 {
-        /*
-          Determine if the suffix of one chars is the prefix of another.
-
-          Args:
-              text1 First chars.
-              text2 Second chars.
-
-          Returns:
-              The number of characters common to the end of the first
-              chars and the start of the second chars.
-        */
         let text1_length = text1.len();
         let text2_length = text2.len();
         if text1_length == 0 || text2_length == 0 {
@@ -1084,18 +1032,15 @@ impl Dmp {
         }
     }
 
-    #[allow(dead_code)]
+    // split the string accoring to given character
+    //
+    // Args:
+    //     text: string we have to split
+    //     ch: character by which we have to split string
+    //
+    // Returns:
+    //     Vector of string after spliting according to character.
     pub fn split_by_char(&mut self, text: &str, ch: char) -> Vec<String> {
-        /*
-        split the string accoring to given character
-
-        Args:
-            text: string we have to split
-            ch: character by which we have to split string
-
-        Returns:
-            Vector of string after spliting according to character.
-        */
         let temp: Vec<&str> = text.split(ch).collect();
         let mut temp1: Vec<String> = vec![];
         for temp_item in &temp {
@@ -1104,17 +1049,14 @@ impl Dmp {
         temp1
     }
 
-    #[allow(dead_code)]
+    /// split the string accoring to given characters "@@ ".
+    ///
+    /// Args:
+    ///     text: string we have to split
+    ///
+    /// Returns:
+    ///     Vector of string after spliting according to characters.
     pub fn split_by_chars(&mut self, text: &str) -> Vec<String> {
-        /*
-        split the string accoring to given characters "@@ ".
-
-        Args:
-            text: string we have to split
-
-        Returns:
-            Vector of string after spliting according to characters.
-        */
         let temp: Vec<&str> = text.split("@@ ").collect();
         let mut temp1: Vec<String> = vec![];
         for temp_item in &temp {
@@ -1123,21 +1065,19 @@ impl Dmp {
         temp1
     }
 
+    /// Do the two texts share a substring which is at least half the length of
+    /// the longer text?
+    /// This speedup can produce non-minimal diffs.
+    ///
+    /// Args:
+    /// text1: First chars.
+    /// text2: Second chars.
+    ///
+    /// Returns:
+    /// Five element Vector, containing the prefix of text1, the suffix of text1,
+    /// the prefix of text2, the suffix of text2 and the common middle.  Or empty vector
+    /// if there was no match.
     pub fn diff_half_match(&self, text1: &Vec<char>, text2: &Vec<char>) -> Vec<String> {
-        /* Do the two texts share a substring which is at least half the length of
-        the longer text?
-        This speedup can produce non-minimal diffs.
-
-        Args:
-        text1: First chars.
-        text2: Second chars.
-
-        Returns:
-        Five element Vector, containing the prefix of text1, the suffix of text1,
-        the prefix of text2, the suffix of text2 and the common middle.  Or empty vector
-        if there was no match.
-        */
-
         // Don't risk returning a non-optimal diff if we have unlimited time.
         if self.diff_timeout.is_none() {
             return vec![];
@@ -1188,22 +1128,20 @@ impl Dmp {
         hm
     }
 
+    /// Does a substring of shorttext exist within longtext such that the
+    /// substring is at least half the length of longtext?
+    /// Closure, but does not reference any external variables.
+    ///
+    /// Args:
+    ///     longtext: Longer chars.
+    ///     shorttext: Shorter chars.
+    ///     i: Start index of quarter length substring within longtext.
+    ///
+    /// Returns:
+    ///     Five element vector, containing the prefix of longtext, the suffix of
+    ///     longtext, the prefix of shorttext, the suffix of shorttext and the
+    ///     common middle.  Or empty vector if there was no match.
     fn diff_half_matchi(&self, long_text: &[char], short_text: &[char], i: i32) -> Vec<String> {
-        /*
-        Does a substring of shorttext exist within longtext such that the
-        substring is at least half the length of longtext?
-        Closure, but does not reference any external variables.
-
-        Args:
-            longtext: Longer chars.
-            shorttext: Shorter chars.
-            i: Start index of quarter length substring within longtext.
-
-        Returns:
-            Five element vector, containing the prefix of longtext, the suffix of
-            longtext, the prefix of shorttext, the suffix of shorttext and the
-            common middle.  Or empty vector if there was no match.
-        */
         let long_len = long_text.len();
         let seed = Vec::from_iter(
             long_text[(i as usize)..(i as usize + long_len / 4)]
@@ -1248,14 +1186,12 @@ impl Dmp {
         }
         vec![]
     }
+    /// Reduce the number of edits by eliminating semantically trivial
+    /// equalities.
+    ///
+    /// Args:
+    ///     diffs: Vectors of diff object.
     pub fn diff_cleanup_semantic(&self, diffs: &mut Vec<Diff>) {
-        /*
-          Reduce the number of edits by eliminating semantically trivial
-          equalities.
-
-          Args:
-              diffs: Vectors of diff object.
-        */
         let mut changes = false;
         let mut equalities: Vec<i32> = vec![]; // Stack of indices where equalities are found.
         let mut last_equality = "".to_string(); // Always equal to diffs[equalities[-1]][1]
@@ -1388,15 +1324,13 @@ impl Dmp {
         }
     }
 
+    /// Look for single edits surrounded on both sides by equalities
+    /// which can be shifted sideways to align the edit to a word boundary.
+    /// e.g: The c<ins>at c</ins>ame. -> The <ins>cat </ins>came.
+    ///
+    /// Args:
+    ///     diffs: Vector of diff object.
     pub fn diff_cleanup_semantic_lossless(&self, diffs: &mut Vec<Diff>) {
-        /*
-          Look for single edits surrounded on both sides by equalities
-          which can be shifted sideways to align the edit to a word boundary.
-          e.g: The c<ins>at c</ins>ame. -> The <ins>cat </ins>came.
-
-          Args:
-              diffs: Vector of diff object.
-        */
         let mut pointer = 1;
         let mut equality1;
         let mut equality2;
@@ -1491,20 +1425,18 @@ impl Dmp {
         }
     }
 
+    /// Given two strings, compute a score representing whether the
+    /// internal boundary falls on logical boundaries.
+    /// Scores range from 6 (best) to 0 (worst).
+    /// Closure, but does not reference any external variables.
+    ///
+    /// Args:
+    ///     one: First chars.
+    ///     two: Second chars.
+    ///
+    /// Returns:
+    ///     The score.
     fn diff_cleanup_semantic_score(&self, one: &[char], two: &[char]) -> i32 {
-        /*
-        Given two strings, compute a score representing whether the
-        internal boundary falls on logical boundaries.
-        Scores range from 6 (best) to 0 (worst).
-        Closure, but does not reference any external variables.
-
-        Args:
-            one: First chars.
-            two: Second chars.
-
-        Returns:
-            The score.
-        */
         if one.is_empty() || two.is_empty() {
             // Edges are the best.
             return 6;
@@ -1570,14 +1502,12 @@ impl Dmp {
         0
     }
 
+    /// Reduce the number of edits by eliminating operation(ally trivial
+    /// equalities.
+    ///
+    /// Args:
+    ///     diffs: Vector of diff object.
     pub fn diff_cleanup_efficiency(&mut self, diffs: &mut Vec<Diff>) {
-        /*
-          Reduce the number of edits by eliminating operation(ally trivial
-          equalities.
-
-          Args:
-              diffs: Vector of diff object.
-        */
         if diffs.is_empty() {
             return;
         }
@@ -1670,14 +1600,12 @@ impl Dmp {
         }
     }
 
+    /// Reorder and merge like edit sections.  Merge equalities.
+    /// Any edit section can move as long as it doesn't cross an equality.
+    ///
+    /// Args:
+    ///     diffs: vectors of diff object.
     pub fn diff_cleanup_merge(&self, diffs: &mut Vec<Diff>) {
-        /*
-          Reorder and merge like edit sections.  Merge equalities.
-          Any edit section can move as long as it doesn't cross an equality.
-
-          Args:
-              diffs: vectors of diff object.
-        */
         if diffs.is_empty() {
             return;
         }
@@ -1825,16 +1753,14 @@ impl Dmp {
         }
     }
 
+    /// It will check if first chars vector is endswith second chars vector or not.
+    ///
+    /// Args:
+    ///     first: First chars,
+    ///     second: Secodn chars.
+    /// Returns:
+    ///     Return true if first chars vector endswith second chars vector, false otherwise.
     fn endswith(&self, first: &[char], second: &[char]) -> bool {
-        /*
-        It will check if first chars vector is endswith second chars vector or not.
-
-        Args:
-            first: First chars,
-            second: Secodn chars.
-        Returns:
-            Return true if first chars vector endswith second chars vector, false otherwise.
-        */
         let mut len1 = first.len();
         let mut len2 = second.len();
         if len1 < len2 {
@@ -1850,16 +1776,14 @@ impl Dmp {
         true
     }
 
+    /// It will check if first chars vector is startswith second chars vector or not.
+    ///
+    /// Args:
+    ///     first: First chars,
+    ///     second: Secodn chars.
+    /// Returns:
+    ///     Return true if first chars vector startswith second chars vector, false otherwise.
     fn startswith(&self, first: &[char], second: &[char]) -> bool {
-        /*
-        It will check if first chars vector is startswith second chars vector or not.
-
-        Args:
-            first: First chars,
-            second: Secodn chars.
-        Returns:
-            Return true if first chars vector startswith second chars vector, false otherwise.
-        */
         let len1 = first.len();
         let len2 = second.len();
         if len1 < len2 {
@@ -1873,20 +1797,16 @@ impl Dmp {
         true
     }
 
-    #[allow(dead_code)]
+    /// loc is a location in text1, compute and return the equivalent location
+    /// in text2.  e.g. "The cat" vs "The big cat", 1->1, 5->8
+    ///
+    /// Args:
+    ///     diffs: Vector of diff object.
+    ///     loc: Location within text1.
+    ///
+    /// Returns:
+    ///     Location within text2.
     pub fn diff_xindex(&mut self, diffs: &Vec<Diff>, loc: i32) -> i32 {
-        /*
-        loc is a location in text1, compute and return the equivalent location
-        in text2.  e.g. "The cat" vs "The big cat", 1->1, 5->8
-
-        Args:
-            diffs: Vector of diff object.
-            loc: Location within text1.
-
-        Returns:
-            Location within text2.
-        */
-
         let mut chars1 = 0;
         let mut chars2 = 0;
         let mut last_chars1 = 0;
@@ -1918,17 +1838,14 @@ impl Dmp {
         last_chars2 + (loc - last_chars1)
     }
 
-    #[allow(dead_code)]
+    /// Compute and return the source text (all equalities and deletions).
+    ///
+    /// Args:
+    ///     diffs: Vectoe of diff object.
+    ///
+    /// Returns:
+    ///     Source text.
     pub fn diff_text1(&mut self, diffs: &mut Vec<Diff>) -> String {
-        /*
-          Compute and return the source text (all equalities and deletions).
-
-          Args:
-              diffs: Vectoe of diff object.
-
-          Returns:
-              Source text.
-        */
         let mut text: String = "".to_string();
         for adiff in diffs {
             if let Diff::Keep(txt) | Diff::Delete(txt) = adiff {
@@ -1938,17 +1855,14 @@ impl Dmp {
         text
     }
 
-    #[allow(dead_code)]
+    /// Compute and return the destination text (all equalities and insertions).
+    ///
+    /// Args:
+    ///     diffs: Vector of diff object.
+    ///
+    /// Returns:
+    ///     destination text.
     pub fn diff_text2(&mut self, diffs: &mut Vec<Diff>) -> String {
-        /*
-          Compute and return the destination text (all equalities and insertions).
-
-          Args:
-              diffs: Vector of diff object.
-
-          Returns:
-              destination text.
-        */
         let mut text: String = "".to_string();
         for adiff in diffs {
             if let Diff::Keep(txt) | Diff::Add(txt) = adiff {
@@ -1958,19 +1872,16 @@ impl Dmp {
         text
     }
 
+    /// Compute and return the destination text (all equalities and insertions).
+    /// Delta offsets are interpreted in u16 code units
+    ///
+    /// Args:
+    ///     text1: Original text
+    ///     delta: Text delta
+    ///
+    /// Returns:
+    ///     Destination text
     pub fn diff_text2_from_delta_u16(&self, text1: &str, delta: &str) -> String {
-        /*
-        Compute and return the destination text (all equalities and insertions).
-        Delta offsets are interpreted in u16 code units
-
-        Args:
-            text1: Original text
-            delta: Text delta
-
-        Returns:
-            Destination text
-        */
-
         let text1_u16: Vec<u16> = text1.encode_utf16().collect();
         let mut text2_u16: Vec<u16> = Vec::new();
 
@@ -2008,18 +1919,15 @@ impl Dmp {
         String::from_utf16(&text2_u16).unwrap()
     }
 
-    #[allow(dead_code)]
+    /// Compute the Levenshtein distance; the number of inserted, deleted or
+    /// substituted characters.
+    ///
+    /// Args:
+    ///     diffs: Vector of diff object.
+    ///
+    /// Returns:
+    ///     Number of changes.
     pub fn diff_levenshtein(&mut self, diffs: &Vec<Diff>) -> i32 {
-        /*
-          Compute the Levenshtein distance; the number of inserted, deleted or
-          substituted characters.
-
-          Args:
-              diffs: Vector of diff object.
-
-          Returns:
-              Number of changes.
-        */
         let mut levenshtein = 0;
         let mut insertions = 0;
         let mut deletions = 0;
@@ -2043,29 +1951,25 @@ impl Dmp {
         levenshtein
     }
 
-    #[allow(dead_code)]
     pub fn diff_todelta(&mut self, diffs: &mut [Diff]) -> String {
         self.diff_todelta_unit(diffs, LengthUnit::UnicodeScalar)
     }
 
-    #[allow(dead_code)]
+    /// Crush the diff into an encoded string which describes the operation(s
+    /// required to transform text1 into text2.
+    /// E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.
+    /// Operation(s are tab-separated.  Inserted text is escaped using %xx notation.
+    ///
+    /// Args:
+    ///     diffs: Vector of diff object.
+    ///     length_unit: Unit of length.
+    ///         For example diff from "🅰🅱" -> "🅱" can have different delta:
+    ///         * When operating on unicode scalars delta will be "-1\t=1"
+    ///         * For UTF-16 delta will be "-2\t=2"
+    ///
+    /// Returns:
+    ///     Delta text.
     pub fn diff_todelta_unit(&mut self, diffs: &mut [Diff], length_unit: LengthUnit) -> String {
-        /*
-        Crush the diff into an encoded string which describes the operation(s
-        required to transform text1 into text2.
-        E.g. =3\t-2\t+ing  -> Keep 3 chars, delete 2 chars, insert 'ing'.
-        Operation(s are tab-separated.  Inserted text is escaped using %xx notation.
-
-        Args:
-            diffs: Vector of diff object.
-            length_unit: Unit of length.
-                For example diff from "🅰🅱" -> "🅱" can have different delta:
-                * When operating on unicode scalars delta will be "-1\t=1"
-                * For UTF-16 delta will be "-2\t=2"
-
-        Returns:
-            Delta text.
-        */
         let mut text: String = "".to_string();
         let len = diffs.len();
         for (k, diffs_item) in diffs.iter().enumerate() {
@@ -2115,34 +2019,29 @@ impl Dmp {
         text
     }
 
-    #[allow(dead_code)]
     pub fn diff_from_delta(&mut self, text1: &str, delta: &str) -> Vec<Diff> {
         self.diff_from_delta_unit(text1, delta, LengthUnit::UnicodeScalar)
     }
 
-    #[allow(dead_code)]
+    /// Given the original text1, and an encoded string which describes the
+    /// operation(s required to transform text1 into text2, compute the full diff.
+    ///
+    /// Args:
+    ///     text1: Source string for the diff.
+    ///     delta: Delta text.
+    ///     length_unit: Unit of length used in delta.
+    ///
+    /// Returns:
+    ///     Vector of diff object.
+    ///
+    /// Raises:
+    ///     ValueError: If invalid input.
     pub fn diff_from_delta_unit(
         &mut self,
         text1: &str,
         delta: &str,
         length_unit: LengthUnit,
     ) -> Vec<Diff> {
-        /*
-        Given the original text1, and an encoded string which describes the
-        operation(s required to transform text1 into text2, compute the full diff.
-
-        Args:
-            text1: Source string for the diff.
-            delta: Delta text.
-            length_unit: Unit of length used in delta.
-
-        Returns:
-            Vector of diff object.
-
-        Raises:
-            ValueError: If invalid input.
-        */
-
         match length_unit {
             LengthUnit::UnicodeScalar => {
                 let text = StringScalarView::new(text1);
@@ -2206,19 +2105,16 @@ impl Dmp {
         Ok(diffs)
     }
 
-    #[allow(dead_code)]
+    /// Locate the best instance of 'pattern' in 'text' near 'loc'.
+    ///
+    /// Args:
+    ///     text: The text to search.
+    ///     pattern: The pattern to search for.
+    ///     loc: The location to search around.
+    ///
+    /// Returns:
+    ///     Best match index or -1.
     pub fn match_main(&mut self, text1: &str, patern1: &str, mut loc: i32) -> i32 {
-        /*
-          Locate the best instance of 'pattern' in 'text' near 'loc'.
-
-          Args:
-              text: The text to search.
-              pattern: The pattern to search for.
-              loc: The location to search around.
-
-          Returns:
-              Best match index or -1.
-        */
         loc = max(0, min(loc, text1.len() as i32));
         if patern1.is_empty() {
             return loc;
@@ -2240,20 +2136,17 @@ impl Dmp {
         self.match_bitap(&text, &patern, loc)
     }
 
-    #[allow(dead_code)]
+    /// Locate the best instance of 'pattern' in 'text' near 'loc' using the
+    /// Bitap algorithm.
+    ///
+    /// Args:
+    ///     text: The text to search.
+    ///     pattern: The pattern to search for.
+    ///     loc: The location to search around.
+    ///
+    /// Returns:
+    ///     Best match index or -1.
     pub fn match_bitap(&mut self, text: &[char], patern: &[char], loc: i32) -> i32 {
-        /*
-          Locate the best instance of 'pattern' in 'text' near 'loc' using the
-          Bitap algorithm.
-
-          Args:
-              text: The text to search.
-              pattern: The pattern to search for.
-              loc: The location to search around.
-
-          Returns:
-              Best match index or -1.
-        */
         // check for maxbits limit.
         if !(self.match_maxbits == 0 || patern.len() as i32 <= self.match_maxbits) {
             panic!("patern too long for this application");
@@ -2364,18 +2257,16 @@ impl Dmp {
         best_loc
     }
 
+    /// Compute and return the score for a match with e errors and x location.
+    /// Accesses loc and pattern through being a closure.
+    ///
+    /// Args:
+    ///     e: Number of errors in match.
+    ///     x: Location of match.
+    ///
+    /// Returns:
+    ///     Overall score for match (0.0 = good, 1.0 = bad).
     pub fn match_bitap_score(&mut self, e: i32, x: i32, loc: i32, patern: &[char]) -> f32 {
-        /*
-        Compute and return the score for a match with e errors and x location.
-        Accesses loc and pattern through being a closure.
-
-        Args:
-            e: Number of errors in match.
-            x: Location of match.
-
-        Returns:
-            Overall score for match (0.0 = good, 1.0 = bad).
-        */
         let accuracy: f32 = (e as f32) / (patern.len() as f32);
         let proximity: i32 = (loc - x).abs();
         if self.match_distance == 0 {
@@ -2388,17 +2279,14 @@ impl Dmp {
         }
         accuracy + ((proximity as f32) / (self.match_distance as f32))
     }
+    /// Initialise the alphabet for the Bitap algorithm.
+    ///
+    /// Args:
+    ///     pattern: The text to encode.
+    ///
+    /// Returns:
+    ///     Hash of character locations.
     pub fn match_alphabet(&mut self, patern: &[char]) -> HashMap<char, i32> {
-        /*
-          Initialise the alphabet for the Bitap algorithm.
-
-          Args:
-              pattern: The text to encode.
-
-          Returns:
-              Hash of character locations.
-        */
-
         let mut s: HashMap<char, i32> = HashMap::new();
         for patern_item in patern {
             s.insert(*patern_item, 0);
@@ -2414,16 +2302,13 @@ impl Dmp {
         s
     }
 
-    #[allow(dead_code)]
+    /// Increase the context until it is unique,
+    /// but don't let the pattern expand beyond Match_MaxBits.
+    ///
+    /// Args:
+    ///     patch: The patch to grow.
+    ///     text: Source text.
     pub fn patch_add_context(&mut self, patch: &mut Patch, text: &mut [char]) {
-        /*
-          Increase the context until it is unique,
-          but don't let the pattern expand beyond Match_MaxBits.
-
-          Args:
-              patch: The patch to grow.
-              text: Source text.
-        */
         if text.is_empty() {
             return;
         }
@@ -2475,17 +2360,14 @@ impl Dmp {
         patch.length2 += prefix_length + suffix_length;
     }
 
-    #[allow(dead_code)]
+    /// Compute a list of patches to turn text1 into text2.
+    /// compute diffs.
+    /// Args:
+    ///     text1: First string.
+    ///     text2: Second string.
+    /// Returns:
+    ///     Vector of Patch objects.
     pub fn patch_make1(&mut self, text1: &str, text2: &str) -> Vec<Patch> {
-        /*
-          Compute a list of patches to turn text1 into text2.
-          compute diffs.
-          Args:
-              text1: First string.
-              text2: Second string.
-          Returns:
-              Vector of Patch objects.
-        */
         let mut diffs: Vec<Diff> = self.diff_main(text1, text2, true);
         if diffs.len() > 2 {
             self.diff_cleanup_semantic(&mut diffs);
@@ -2494,46 +2376,38 @@ impl Dmp {
         self.patch_make4(text1, &mut diffs)
     }
 
-    #[allow(dead_code)]
+    /// Compute a list of patches to turn text1 into text2.
+    /// Use diffs to compute first text.
+    ///
+    /// Args:
+    ///     diffs: Vector od diff object.
+    /// Returns:
+    ///     Vector of Patch objects.
     pub fn patch_make2(&mut self, diffs: &mut Vec<Diff>) -> Vec<Patch> {
-        /*
-          Compute a list of patches to turn text1 into text2.
-          Use diffs to compute first text.
-
-          Args:
-              diffs: Vector od diff object.
-          Returns:
-              Vector of Patch objects.
-        */
         let text1 = self.diff_text1(diffs);
         self.patch_make4(text1.as_str(), diffs)
     }
 
-    #[allow(dead_code)]
+    /// Compute a list of patches to turn text1 into text2.
+    ///
+    /// Args:
+    ///     text1: First string.
+    ///     text2: Second string.
+    ///     diffs: Vector of diff.
+    ///
+    /// Returns:
+    ///     Vector of Patch objects.
     pub fn patch_make3(&mut self, text1: &str, _text2: &str, diffs: &mut [Diff]) -> Vec<Patch> {
-        /*
-          Compute a list of patches to turn text1 into text2.
-
-          Args:
-              text1: First string.
-              text2: Second string.
-              diffs: Vector of diff.
-
-          Returns:
-              Vector of Patch objects.
-        */
         self.patch_make4(text1, diffs)
     }
+    /// Compute a list of patches to turn text1 into text2.
+    ///
+    /// Args:
+    ///     text1: First string.
+    ///     diffs: Vector of diff object.
+    /// Returns:
+    ///     Array of Patch objects.
     pub fn patch_make4(&mut self, text1: &str, diffs: &mut [Diff]) -> Vec<Patch> {
-        /*
-          Compute a list of patches to turn text1 into text2.
-
-          Args:
-              text1: First string.
-              diffs: Vector of diff object.
-          Returns:
-              Array of Patch objects.
-        */
         let mut patches: Vec<Patch> = vec![];
         if diffs.is_empty() {
             return patches; // Get rid of the None case.
@@ -2614,17 +2488,14 @@ impl Dmp {
         patches
     }
 
-    #[allow(dead_code)]
+    /// Given an Vector of patches, return another Vector that is identical.
+    ///
+    /// Args:
+    ///     patches: Vector of Patch objects.
+    ///
+    /// Returns:
+    ///     Vector of Patch objects.
     pub fn patch_deep_copy(&mut self, patches: &mut Vec<Patch>) -> Vec<Patch> {
-        /*
-          Given an Vector of patches, return another Vector that is identical.
-
-          Args:
-              patches: Vector of Patch objects.
-
-          Returns:
-              Vector of Patch objects.
-        */
         let mut patches_copy: Vec<Patch> = vec![];
         for patches_item in patches {
             let mut patch_copy = Patch::new(vec![], 0, 0, 0, 0);
@@ -2642,24 +2513,20 @@ impl Dmp {
         patches_copy
     }
 
-    #[allow(dead_code)]
+    /// Merge a set of patches onto the text.  Return a patched text, as well
+    /// as a list of true/false values indicating which patches were applied.
+    ///
+    /// Args:
+    ///     patches: Vector of Patch objects.
+    ///     text: Old text.
+    ///
+    /// Returns:
+    ///     Two element Vector, containing the new chars and an Vector of boolean values.
     pub fn patch_apply(
         &mut self,
         patches: &mut Vec<Patch>,
         source_text: &str,
     ) -> (Vec<char>, Vec<bool>) {
-        /*
-          Merge a set of patches onto the text.  Return a patched text, as well
-          as a list of true/false values indicating which patches were applied.
-
-          Args:
-              patches: Vector of Patch objects.
-              text: Old text.
-
-          Returns:
-              Two element Vector, containing the new chars and an Vector of boolean values.
-        */
-
         if patches.is_empty() {
             return (source_text.chars().collect(), vec![]);
         }
@@ -2796,17 +2663,15 @@ impl Dmp {
         (text, results)
     }
 
+    /// Add some padding on text start and end so that edges can match
+    /// something.  Intended to be called only from within patch_apply.
+    ///
+    /// Args:
+    ///     patches: Array of Patch objects.
+    ///
+    /// Returns:
+    ///     The padding chars added to each side.
     pub fn patch_add_padding(&mut self, patches: &mut [Patch]) -> Vec<char> {
-        /*
-          Add some padding on text start and end so that edges can match
-          something.  Intended to be called only from within patch_apply.
-
-          Args:
-              patches: Array of Patch objects.
-
-          Returns:
-              The padding chars added to each side.
-        */
         let padding_length = self.patch_margin;
         let mut nullpadding: Vec<char> = vec![];
         for i in 0..padding_length {
@@ -2869,15 +2734,13 @@ impl Dmp {
         nullpadding
     }
 
+    /// Look through the patches and break up any which are longer than the
+    /// maximum limit of the match algorithm.
+    /// Intended to be called only from within patch_apply.
+    ///
+    /// Args:
+    ///     patches: Array of Patch objects.
     pub fn patch_splitmax(&mut self, patches: &mut Vec<Patch>) {
-        /*
-          Look through the patches and break up any which are longer than the
-          maximum limit of the match algorithm.
-          Intended to be called only from within patch_apply.
-
-          Args:
-              patches: Array of Patch objects.
-        */
         let patch_size = self.match_maxbits;
         if patch_size == 0 {
             return;
@@ -2996,17 +2859,14 @@ impl Dmp {
         }
     }
 
-    #[allow(dead_code)]
+    /// Take a list of patches and return a textual representation.
+    ///
+    /// Args:
+    ///     patches: Vector of Patch objects.
+    ///
+    /// Returns:
+    ///     Text representation of patches.
     pub fn patch_to_text(&mut self, patches: &mut Vec<Patch>) -> String {
-        /*
-          Take a list of patches and return a textual representation.
-
-          Args:
-              patches: Vector of Patch objects.
-
-          Returns:
-              Text representation of patches.
-        */
         let mut text: String = "".to_string();
         for patches_item in patches {
             text += (patches_item.to_string()).as_str();
@@ -3014,21 +2874,18 @@ impl Dmp {
         text
     }
 
-    #[allow(dead_code)]
+    /// Parse a textual representation of patches and return a list of patch
+    /// objects.
+    ///
+    /// Args:
+    ///     textline: Text representation of patches.
+    ///
+    /// Returns:
+    ///     Vector of Patch objects.
+    ///
+    /// Raises:
+    ///     ValueError: If invalid input.
     pub fn patch_from_text(&mut self, textline: String) -> Vec<Patch> {
-        /*
-          Parse a textual representation of patches and return a list of patch
-          objects.
-
-          Args:
-              textline: Text representation of patches.
-
-          Returns:
-              Vector of Patch objects.
-
-          Raises:
-              ValueError: If invalid input.
-        */
         let text: Vec<String> = self.split_by_chars(textline.as_str());
         let mut patches: Vec<Patch> = vec![];
         for (i, text_item) in text.iter().enumerate() {
