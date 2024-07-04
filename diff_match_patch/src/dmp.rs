@@ -179,14 +179,7 @@ impl StringView for StringUTF16View {
 
 impl Default for Dmp {
     fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Dmp {
-    pub fn new() -> Self {
-        // it will give a new dmp object.
-        Dmp {
+        Self {
             diff_timeout: None,
             patch_delete_threshold: 0.5,
             edit_cost: 0,
@@ -196,7 +189,9 @@ impl Dmp {
             match_threshold: 0.5,
         }
     }
+}
 
+impl Dmp {
     /// Find the differences between two chars.  Simplifies the problem by
     /// stripping any common prefix or suffix off the texts before diffing.
     ///
@@ -489,7 +484,7 @@ impl Dmp {
         // Scan the text on a line-by-line basis first.
         let (text3, text4, linearray) = self.diff_lines_tochars(text1, text2);
 
-        let dmp = Dmp::new();
+        let dmp = Dmp::default();
         let mut diffs: Vec<Diff> =
             dmp.diff_main_internal(text3.as_str(), text4.as_str(), false, start_time);
 
@@ -753,7 +748,7 @@ impl Dmp {
         let mut wordarray: Vec<String> = vec!["".to_string()];
         let mut wordhash: HashMap<String, u32> = HashMap::new();
         let chars1 = self.diff_words_tochars_munge(text1, &mut wordarray, &mut wordhash);
-        let dmp = Dmp::new();
+        let dmp = Dmp::default();
         let chars2 = dmp.diff_words_tochars_munge(text2, &mut wordarray, &mut wordhash);
         (chars1, chars2, wordarray)
     }
@@ -825,7 +820,7 @@ impl Dmp {
         let mut linearray: Vec<String> = vec!["".to_string()];
         let mut linehash: HashMap<String, i32> = HashMap::new();
         let chars1 = self.diff_lines_tochars_munge(text1, &mut linearray, &mut linehash);
-        let dmp = Dmp::new();
+        let dmp = Dmp::default();
         let chars2 = dmp.diff_lines_tochars_munge(text2, &mut linearray, &mut linehash);
         (chars1, chars2, linearray)
     }
