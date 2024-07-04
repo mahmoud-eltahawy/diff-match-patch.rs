@@ -311,27 +311,23 @@ impl Dmp {
                 (text2, text1)
             };
             let i = self.kmp(longtext, shorttext, 0);
-            if i != -1 {
+            if let Some(i) = i {
                 // Shorter text is inside the longer text (speedup).
                 if len1 > len2 {
                     if i != 0 {
-                        diffs.push(Diff::Delete((text1[0..(i as usize)]).iter().collect()));
+                        diffs.push(Diff::Delete((text1[0..i]).iter().collect()));
                     }
                     diffs.push(Diff::Keep(text2.iter().collect()));
-                    if i as usize + text2.len() != text1.len() {
-                        diffs.push(Diff::Delete(
-                            text1[((i as usize) + text2.len())..].iter().collect(),
-                        ));
+                    if i + text2.len() != text1.len() {
+                        diffs.push(Diff::Delete(text1[(i + text2.len())..].iter().collect()));
                     }
                 } else {
                     if i != 0 {
-                        diffs.push(Diff::Add((text2[0..(i as usize)]).iter().collect()));
+                        diffs.push(Diff::Add((text2[0..i]).iter().collect()));
                     }
                     diffs.push(Diff::Keep(text1.iter().collect()));
-                    if (i as usize) + text1.len() != text2.len() {
-                        diffs.push(Diff::Add(
-                            text2[((i as usize) + text1.len())..].iter().collect(),
-                        ));
+                    if i + text1.len() != text2.len() {
+                        diffs.push(Diff::Add(text2[(i + text1.len())..].iter().collect()));
                     }
                 }
                 return diffs;
@@ -380,12 +376,12 @@ impl Dmp {
     ///
     /// Returns:
     ///     the first index where patern is found or -1 if not found.
-    fn kmp(&self, text1: &[char], text2: &[char], ind: usize) -> i32 {
+    fn kmp(&self, text1: &[char], text2: &[char], ind: usize) -> Option<usize> {
         if text2.is_empty() {
-            return ind as i32;
+            return Some(ind);
         }
         if text1.is_empty() {
-            return -1;
+            return None;
         }
         let len1 = text1.len();
         let len2 = text2.len();
@@ -414,7 +410,7 @@ impl Dmp {
                 len += 1;
                 i += 1;
                 if len == len2 {
-                    return (i - len) as i32;
+                    return Some(i - len);
                 }
             } else if len == 0 {
                 i += 1;
@@ -422,7 +418,7 @@ impl Dmp {
                 len = patern[len - 1];
             }
         }
-        -1
+        None
     }
 
     /// Find the last index before a specific index in text1 where patern is present.
@@ -434,12 +430,12 @@ impl Dmp {
     ///
     /// Returns:
     ///     the last index where patern is found or -1 if not found.
-    fn rkmp(&mut self, text1: &[char], text2: &[char], ind: usize) -> i32 {
+    fn rkmp(&mut self, text1: &[char], text2: &[char], ind: usize) -> Option<usize> {
         if text2.is_empty() {
-            return ind as i32;
+            return Some(ind);
         }
         if text1.is_empty() {
-            return -1;
+            return None;
         }
         let len2 = text2.len();
         let mut patern: Vec<usize> = Vec::new();
@@ -477,7 +473,11 @@ impl Dmp {
                 len = patern[len - 1];
             }
         }
-        ans
+        if ans == -1 {
+            None
+        } else {
+            Some(ans as usize)
+        }
     }
 
     /// Do a quick line-level diff on both chars, then rediff the parts for
@@ -1016,10 +1016,10 @@ impl Dmp {
         loop {
             let patern = text1_trunc[(len as usize - length)..(len as usize)].to_vec();
             let found = self.kmp(&text2_trunc, &patern, 0);
-            if found == -1 {
+            let Some(found) = found else {
                 return best;
-            }
-            length += found as usize;
+            };
+            length += found;
             if found == 0 {
                 best = length as i32;
                 length += 1;
@@ -1148,27 +1148,23 @@ impl Dmp {
         let mut best_longtext_b = "".to_string();
         let mut best_shorttext_a = "".to_string();
         let mut best_shorttext_b = "".to_string();
-        let mut j: i32 = self.kmp(short_text, &seed, 0);
-        while j != -1 {
+        let mut jk = self.kmp(short_text, &seed, 0);
+        while let Some(j) = jk {
             let prefix_length =
-                self.diff_common_prefix(&long_text[(i as usize)..], &short_text[(j as usize)..]);
+                self.diff_common_prefix(&long_text[(i as usize)..], &short_text[j..]);
             let suffix_length =
-                self.diff_common_suffix(&long_text[..(i as usize)], &short_text[..(j as usize)]);
+                self.diff_common_suffix(&long_text[..(i as usize)], &short_text[..j]);
             if best_common.len() < suffix_length as usize + prefix_length as usize {
                 best_common = short_text
-                    [(j as usize - suffix_length as usize)..(j as usize + prefix_length as usize)]
+                    [(j - suffix_length as usize)..(j + prefix_length as usize)]
                     .iter()
                     .collect();
                 best_longtext_a = long_text[..((i - suffix_length) as usize)].iter().collect();
                 best_longtext_b = long_text[((i + prefix_length) as usize)..].iter().collect();
-                best_shorttext_a = short_text[..((j - suffix_length) as usize)]
-                    .iter()
-                    .collect();
-                best_shorttext_b = short_text[((j + prefix_length) as usize)..]
-                    .iter()
-                    .collect();
+                best_shorttext_a = short_text[..(j - suffix_length as usize)].iter().collect();
+                best_shorttext_b = short_text[(j + prefix_length as usize)..].iter().collect();
             }
-            j = self.kmp(short_text, &seed, j as usize + 1);
+            jk = self.kmp(short_text, &seed, j + 1);
         }
         if best_common.chars().count() * 2 >= long_text.len() {
             return vec![
@@ -2152,24 +2148,24 @@ impl Dmp {
         // Highest score beyond which we give up.
         let mut score_threshold: f32 = self.match_threshold;
         // Is there a nearby exact match? (speedup)
-        let mut best_loc = self.kmp(text, patern, loc as usize);
-        if best_loc != -1 {
+        let mut out_best_loc = self.kmp(text, patern, loc as usize);
+        if let Some(best_loc) = out_best_loc {
             score_threshold = min1(
-                self.match_bitap_score(0, best_loc, loc, patern),
+                self.match_bitap_score(0, best_loc as i32, loc, patern),
                 score_threshold,
             );
             // What about in the other direction? (speedup)
-            best_loc = self.rkmp(text, patern, loc as usize + patern.len());
-            if best_loc != -1 {
+            out_best_loc = self.rkmp(text, patern, loc as usize + patern.len());
+            if let Some(best_loc) = out_best_loc {
                 score_threshold = min1(
                     score_threshold,
-                    self.match_bitap_score(0, best_loc, loc, patern),
+                    self.match_bitap_score(0, best_loc as i32, loc, patern),
                 );
             }
         }
         // Initialise the bit arrays.
         let matchmask = 1 << (patern.len() - 1); //>
-        best_loc = -1;
+        let mut best_loc = -1;
         let mut bin_min: i32;
         let mut bin_mid: i32;
         let mut bin_max: i32 = (patern.len() + text.len()) as i32;
