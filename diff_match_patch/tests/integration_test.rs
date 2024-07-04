@@ -1,15 +1,15 @@
 use core::char;
-use diff_match_patch;
+use diff_match_patch::{self, Diff};
 use std::collections::HashMap;
 
 pub fn diff_rebuildtexts(diffs: Vec<diff_match_patch::Diff>) -> Vec<String> {
     let mut text1: String = "".to_string();
     let mut text2: String = "".to_string();
     for x in 0..diffs.len() {
-        if diffs[x].operation() != 1 {
+        if let Diff::Keep(_) | Diff::Delete(_) = diffs[x] {
             text1 += diffs[x].text();
         }
-        if diffs[x].operation() != -1 {
+        if let Diff::Keep(_) | Diff::Add(_) = diffs[x] {
             text2 += diffs[x].text();
         }
     }
