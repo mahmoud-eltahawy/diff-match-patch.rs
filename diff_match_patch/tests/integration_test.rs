@@ -6,11 +6,11 @@ pub fn diff_rebuildtexts(diffs: Vec<diff_match_patch::Diff>) -> Vec<String> {
     let mut text1: String = "".to_string();
     let mut text2: String = "".to_string();
     for x in 0..diffs.len() {
-        if let Diff::Keep(_) | Diff::Delete(_) = diffs[x] {
-            text1 += diffs[x].text();
+        if let Diff::Keep(txt) | Diff::Delete(txt) = &diffs[x] {
+            text1 += txt;
         }
-        if let Diff::Keep(_) | Diff::Add(_) = diffs[x] {
-            text2 += diffs[x].text();
+        if let Diff::Keep(txt) | Diff::Add(txt) = &diffs[x] {
+            text2 += txt;
         }
     }
 

@@ -6,6 +6,7 @@ Applies the patch onto another text, allowing for errors.
 
 use core::char;
 use regex::Regex;
+use std::cmp::max;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{self, Display};
@@ -128,15 +129,6 @@ fn min1(x: f32, y: f32) -> f32 {
         return y;
     }
     x
-}
-
-#[allow(dead_code)]
-fn max(x: i32, y: i32) -> i32 {
-    // return maximum element.
-    if x > y {
-        return x;
-    }
-    y
 }
 
 #[allow(dead_code)]
@@ -562,15 +554,15 @@ impl Dmp {
         let mut temp: Vec<Diff> = vec![];
         while pointer < diffs.len() {
             match &diffs[pointer] {
-                Diff::Add(_) => {
+                Diff::Add(txt) => {
                     count_insert += 1;
-                    text_insert += diffs[pointer].text().as_str();
+                    text_insert += txt;
                 }
-                Diff::Delete(_) => {
+                Diff::Delete(txt) => {
                     count_delete += 1;
-                    text_delete += diffs[pointer].text().as_str();
+                    text_delete += txt;
                 }
-                Diff::Keep(_) => {
+                Diff::Keep(txt) => {
                     // Upon reaching an equality, check for prior redundancies.
                     if count_delete >= 1 && count_insert >= 1 {
                         // Delete the offending records and add the merged ones.
@@ -583,7 +575,7 @@ impl Dmp {
                         for z in sub_diff {
                             temp.push(z);
                         }
-                        temp.push(diffs[pointer].with_text(diffs[pointer].text().clone()));
+                        temp.push(diffs[pointer].with_text(txt.clone()));
                     } else {
                         if !text_delete.is_empty() {
                             temp.push(Diff::Delete(text_delete));
@@ -591,7 +583,7 @@ impl Dmp {
                         if !text_insert.is_empty() {
                             temp.push(Diff::Add(text_insert));
                         }
-                        temp.push(diffs[pointer].with_text(diffs[pointer].text().clone()));
+                        temp.push(diffs[pointer].with_text(txt.clone()));
                     }
                     count_delete = 0;
                     count_insert = 0;
@@ -1275,22 +1267,26 @@ impl Dmp {
         let mut length_insertions2 = 0;
         let mut length_deletions2 = 0;
         while (pointer as usize) < diffs.len() {
-            if let Diff::Keep(_) = diffs[pointer as usize] {
+            if let Diff::Keep(txt) = &diffs[pointer as usize] {
                 // Equality found.
                 equalities.push(pointer);
                 length_insertions1 = length_insertions2;
                 length_insertions2 = 0;
                 length_deletions1 = length_deletions2;
                 length_deletions2 = 0;
-                last_equality.clone_from(diffs[pointer as usize].text());
+                last_equality.clone_from(txt);
             } else {
                 // An insertion or deletion.
-                if let Diff::Add(_) = diffs[pointer as usize] {
-                    length_insertions2 += diffs[pointer as usize].text().chars().count() as i32;
-                } else {
-                    length_deletions2 += diffs[pointer as usize].text().chars().count() as i32;
-                    // Eliminate an equality that is smaller or equal to the edits on both
-                    // sides of it.
+                match &diffs[pointer as usize] {
+                    Diff::Add(txt) => {
+                        length_insertions2 += txt.len() as i32;
+                    }
+                    Diff::Delete(txt) => {
+                        length_deletions2 += txt.len() as i32;
+                        // Eliminate an equality that is smaller or equal to the edits on both
+                        // sides of it.
+                    }
+                    Diff::Keep(_) => unreachable!(),
                 }
                 let last_equality_len = last_equality.chars().count() as i32;
                 if last_equality_len > 0
@@ -1340,11 +1336,11 @@ impl Dmp {
         let mut overlap_length2: i32;
         pointer = 1;
         while (pointer as usize) < diffs.len() {
-            if let (Diff::Delete(_), Diff::Add(_)) =
+            if let (Diff::Delete(deletion_txt), Diff::Add(insertion_txt)) =
                 (&diffs[pointer as usize - 1], &diffs[pointer as usize])
             {
-                let deletion_vec: Vec<char> = diffs[pointer as usize - 1].text().chars().collect();
-                let insertion_vec: Vec<char> = diffs[pointer as usize].text().chars().collect();
+                let deletion_vec: Vec<char> = deletion_txt.chars().collect();
+                let insertion_vec: Vec<char> = insertion_txt.chars().collect();
                 overlap_length1 = self.diff_common_overlap(&deletion_vec, &insertion_vec);
                 overlap_length2 = self.diff_common_overlap(&insertion_vec, &deletion_vec);
                 if overlap_length1 >= overlap_length2 {
@@ -1415,13 +1411,13 @@ impl Dmp {
 
         //Intentionally ignore the first and last element (don't need checking).
         while pointer < diffs.len() as i32 - 1 {
-            if let (Diff::Keep(_), Diff::Keep(_)) =
+            if let (Diff::Keep(prev_txt), Diff::Keep(next_txt)) =
                 (&diffs[pointer as usize - 1], &diffs[pointer as usize + 1])
             {
                 //  This is a single edit surrounded by equalities.
-                equality1 = diffs[pointer as usize - 1].text().clone();
+                equality1 = prev_txt.clone();
                 edit = diffs[pointer as usize].text().clone();
-                equality2 = diffs[pointer as usize + 1].text().clone();
+                equality2 = next_txt.clone();
                 let mut edit_vec: Vec<char> = edit.chars().collect();
                 let mut equality1_vec: Vec<char> = equality1.chars().collect();
                 let mut equality2_vec: Vec<char> = equality2.chars().collect();
@@ -1472,7 +1468,7 @@ impl Dmp {
                         best_equality2 = equality2_vec[..].iter().collect();
                     }
                 }
-                if diffs[pointer as usize - 1].text() != &best_equality1 {
+                if prev_txt != &best_equality1 {
                     // We have an improvement, save it back to the diff.
                     if !best_equality1.is_empty() {
                         diffs[pointer as usize - 1] =
@@ -1594,15 +1590,13 @@ impl Dmp {
         let mut post_ins = false; // Is there an insertion operation() after the last equality.
         let mut post_del = false; // Is there a deletion operation() after the last equality.
         while (pointer as usize) < diffs.len() {
-            if let Diff::Keep(_) = diffs[pointer as usize] {
-                if diffs[pointer as usize].text().chars().count() < self.edit_cost as usize
-                    && (post_del || post_ins)
-                {
+            if let Diff::Keep(txt) = &diffs[pointer as usize] {
+                if txt.len() < self.edit_cost as usize && (post_del || post_ins) {
                     // Candidate found.
                     equalities.push(pointer);
                     pre_ins = post_ins;
                     pre_del = post_del;
-                    last_equality.clone_from(diffs[pointer as usize].text());
+                    last_equality.clone_from(txt);
                 } else {
                     // Not a candidate, and can never become one.
                     equalities = vec![];
@@ -1694,19 +1688,20 @@ impl Dmp {
         let mut count_insert = 0;
         let mut count_delete = 0;
         while (i as usize) < diffs.len() {
-            match diffs[i as usize] {
-                Diff::Delete(_) => {
-                    text_delete += diffs[i as usize].text().as_str();
+            match &diffs[i as usize] {
+                Diff::Delete(txt) => {
+                    text_delete += txt;
                     count_delete += 1;
                     i += 1;
                 }
-                Diff::Add(_) => {
-                    text_insert += diffs[i as usize].text().as_str();
+                Diff::Add(txt) => {
+                    text_insert += txt;
                     count_insert += 1;
                     i += 1;
                 }
-                Diff::Keep(_) => {
+                Diff::Keep(txt) => {
                     // Upon reaching an equality, check for prior redundancies.
+                    let txt = txt.clone();
                     if count_delete + count_insert > 1 {
                         let mut delete_vec: Vec<char> = text_delete.chars().collect();
                         let mut insert_vec: Vec<char> = text_insert.chars().collect();
@@ -1737,8 +1732,7 @@ impl Dmp {
                                     [(insert_vec.len() - commonlength as usize)..]
                                     .iter()
                                     .collect();
-                                diffs[i as usize] = diffs[i as usize]
-                                    .with_text(temp1 + diffs[i as usize].text().as_str());
+                                diffs[i as usize] = diffs[i as usize].with_text(temp1 + &txt);
                                 insert_vec = insert_vec
                                     [..(insert_vec.len() - commonlength as usize)]
                                     .to_vec();
@@ -1793,14 +1787,15 @@ impl Dmp {
         i = 1;
         // Intentionally ignore the first and last element (don't need checking).
         while (i as usize) < diffs.len() - 1 {
-            if let (Diff::Keep(_), Diff::Keep(_)) = (&diffs[i as usize - 1], &diffs[i as usize + 1])
+            if let (Diff::Keep(prev_txt), Diff::Keep(next_txt)) =
+                (&diffs[i as usize - 1], &diffs[i as usize + 1])
             {
                 // This is a single edit surrounded by equalities.
                 let text_vec = diffs[i as usize].text().chars().collect::<Vec<_>>();
-                let text1_vec = diffs[i as usize - 1].text().chars().collect::<Vec<_>>();
-                let text2_vec: Vec<char> = diffs[i as usize + 1].text().chars().collect();
-                let prev_text = diffs[i as usize - 1].text().clone();
-                let next_text = diffs[i as usize + 1].text().clone();
+                let text1_vec = prev_txt.chars().collect::<Vec<_>>();
+                let text2_vec: Vec<char> = next_txt.chars().collect();
+                let prev_text = prev_txt.clone();
+                let next_text = next_txt.clone();
                 if self.endswith(&text_vec, &text1_vec) {
                     // Shift the edit over the previous equality.
                     if !diffs[i as usize - 1].text().is_empty() {
@@ -1899,13 +1894,13 @@ impl Dmp {
         let mut lastdiff = Diff::Keep("".to_string());
         let z = 0;
         for diffs_item in diffs {
-            if let Diff::Keep(_) | Diff::Delete(_) = diffs_item {
+            if let Diff::Keep(txt) | Diff::Delete(txt) = &diffs_item {
                 // Equality or deletion.
-                chars1 += diffs_item.text().chars().count() as i32;
+                chars1 += txt.len() as i32;
             }
-            if let Diff::Keep(_) | Diff::Add(_) = diffs_item {
+            if let Diff::Keep(txt) | Diff::Add(txt) = &diffs_item {
                 // Equality or insertion.
-                chars2 += diffs_item.text().chars().count() as i32;
+                chars2 += txt.len() as i32;
             }
             if chars1 > loc {
                 // Overshot the location.
@@ -1936,8 +1931,8 @@ impl Dmp {
         */
         let mut text: String = "".to_string();
         for adiff in diffs {
-            if let Diff::Keep(_) | Diff::Delete(_) = adiff {
-                text += adiff.text().as_str();
+            if let Diff::Keep(txt) | Diff::Delete(txt) = adiff {
+                text += txt;
             }
         }
         text
@@ -1956,8 +1951,8 @@ impl Dmp {
         */
         let mut text: String = "".to_string();
         for adiff in diffs {
-            if let Diff::Keep(_) | Diff::Add(_) = adiff {
-                text += adiff.text().as_str();
+            if let Diff::Keep(txt) | Diff::Add(txt) = adiff {
+                text += txt;
             }
         }
         text
@@ -2029,12 +2024,12 @@ impl Dmp {
         let mut insertions = 0;
         let mut deletions = 0;
         for adiff in diffs {
-            match adiff {
-                Diff::Add(_) => {
-                    insertions += adiff.text().chars().count();
+            match &adiff {
+                Diff::Add(txt) => {
+                    insertions += txt.len();
                 }
-                Diff::Delete(_) => {
-                    deletions += adiff.text().chars().count();
+                Diff::Delete(txt) => {
+                    deletions += txt.len();
                 }
                 Diff::Keep(_) => {
                     // A deletion and an insertion is one substitution.
@@ -2074,13 +2069,13 @@ impl Dmp {
         let mut text: String = "".to_string();
         let len = diffs.len();
         for (k, diffs_item) in diffs.iter().enumerate() {
-            if let Diff::Add(_) = diffs_item {
+            if let Diff::Add(txt) = &diffs_item {
                 // High ascii will raise UnicodeDecodeError.  Use Unicode instead.
                 let temp5: Vec<char> = vec![
                     '!', '~', '*', '(', ')', ';', '/', '?', ':', '@', '&', '=', '+', '$', ',', '#',
                     ' ', '\'',
                 ];
-                let temp4: Vec<char> = diffs_item.text().chars().collect();
+                let temp4: Vec<char> = txt.chars().collect();
                 text += "+";
                 for temp4_item in &temp4 {
                     let mut is = false;
@@ -2549,56 +2544,48 @@ impl Dmp {
         let mut prepatch: Vec<char> = (text1.to_string()).chars().collect(); // Recreate the patches to determine context info.
         let mut postpatch: Vec<char> = (text1.to_string()).chars().collect();
         for i in 0..diffs.len() {
-            let temp1: &Vec<char> = &(diffs[i].text().chars().collect());
             if patch.diffs.is_empty() && matches!(diffs[i], Diff::Add(_) | Diff::Delete(_)) {
                 // A new patch starts here.
                 patch.start1 = char_count1;
                 patch.start2 = char_count2;
             }
-            match diffs[i] {
-                Diff::Add(_) => {
+            match &diffs[i] {
+                Diff::Add(txt) => {
                     // Insertion
-                    patch
-                        .diffs
-                        .push(diffs[i].with_text(diffs[i].text().clone()));
+                    patch.diffs.push(diffs[i].clone());
                     let temp: Vec<char> = postpatch[char_count2 as usize..].to_vec();
                     postpatch = postpatch[..char_count2 as usize].to_vec();
-                    patch.length2 += temp1.len() as i32;
-                    for ch in temp1 {
-                        postpatch.push(*ch);
+                    patch.length2 += txt.len() as i32;
+                    for ch in txt.chars() {
+                        postpatch.push(ch);
                     }
                     for ch in temp {
                         postpatch.push(ch);
                     }
                 }
-                Diff::Delete(_) => {
+                Diff::Delete(txt) => {
                     // Deletion.
-                    patch
-                        .diffs
-                        .push(diffs[i].with_text(diffs[i].text().clone()));
-                    let temp: Vec<char> =
-                        postpatch[(temp1.len() + char_count2 as usize)..].to_vec();
+                    patch.diffs.push(diffs[i].clone());
+                    let temp: Vec<char> = postpatch[(txt.len() + char_count2 as usize)..].to_vec();
                     postpatch = postpatch[..char_count2 as usize].to_vec();
-                    patch.length1 += temp1.len() as i32;
+                    patch.length1 += txt.len() as i32;
                     for ch in &temp {
                         postpatch.push(*ch);
                     }
                 }
-                Diff::Keep(_) => {
-                    if temp1.len() as i32 <= self.patch_margin * 2
+                Diff::Keep(txt) => {
+                    if txt.len() as i32 <= self.patch_margin * 2
                         && !patch.diffs.is_empty()
                         && i != diffs.len() - 1
                     {
                         // Small equality inside a patch.
-                        patch
-                            .diffs
-                            .push(diffs[i].with_text(diffs[i].text().clone()));
-                        patch.length1 += temp1.len() as i32;
-                        patch.length2 += temp1.len() as i32;
+                        patch.diffs.push(diffs[i].clone());
+                        patch.length1 += txt.len() as i32;
+                        patch.length2 += txt.len() as i32;
                     }
 
                     // Time for a new patch.
-                    if temp1.len() as i32 >= 2 * self.patch_margin && !patch.diffs.is_empty() {
+                    if txt.len() as i32 >= 2 * self.patch_margin && !patch.diffs.is_empty() {
                         self.patch_add_context(&mut patch, &mut prepatch);
                         patches.push(patch);
                         patch = Patch::new(vec![], 0, 0, 0, 0);
@@ -2609,10 +2596,11 @@ impl Dmp {
             }
 
             // Update the current character count.
-            if let Diff::Keep(_) | Diff::Delete(_) = diffs[i] {
-                char_count1 += temp1.len() as i32;
+            if let Diff::Keep(txt) | Diff::Delete(txt) = &diffs[i] {
+                char_count1 += txt.len() as i32;
             }
-            if let Diff::Keep(_) | Diff::Add(_) = diffs[i] {
+            let temp1: &Vec<char> = &diffs[i].text().chars().collect();
+            if let Diff::Keep(_) | Diff::Add(_) = &diffs[i] {
                 char_count2 += temp1.len() as i32;
             }
         }
@@ -2771,21 +2759,21 @@ impl Dmp {
                         let mut index1: i32 = 0;
                         for y in 0..patches_copy[x].diffs.len() {
                             let mod1 = patches_copy[x].diffs[y].clone();
-                            if let Diff::Add(_) | Diff::Delete(_) = mod1 {
+                            if let Diff::Add(_) | Diff::Delete(_) = &mod1 {
                                 let index2: i32 = self.diff_xindex(&diffs, index1);
-                                if let Diff::Add(_) = mod1 {
+                                if let Diff::Add(txt) = &mod1 {
                                     // Insertion
                                     let temp3: String =
                                         text[..(start_loc + index2) as usize].iter().collect();
                                     let temp4: String =
                                         text[(start_loc + index2) as usize..].iter().collect();
-                                    let temp5 = temp3 + mod1.text().as_str() + temp4.as_str();
+                                    let temp5 = temp3 + txt + temp4.as_str();
                                     text = temp5.chars().collect();
-                                } else if let Diff::Delete(_) = mod1 {
+                                } else if let Diff::Delete(txt) = &mod1 {
                                     // Deletion
                                     let temp3: String =
                                         text[..(start_loc + index2) as usize].iter().collect();
-                                    let diffs_text_len = mod1.text().chars().count();
+                                    let diffs_text_len = txt.len();
                                     let temp4: String = text[(start_loc
                                         + self.diff_xindex(&diffs, index1 + diffs_text_len as i32))
                                         as usize..]
@@ -2795,8 +2783,8 @@ impl Dmp {
                                     text = temp5.chars().collect();
                                 }
                             }
-                            if let Diff::Keep(_) | Diff::Add(_) = mod1 {
-                                index1 += mod1.text().chars().count() as i32;
+                            if let Diff::Keep(txt) | Diff::Add(txt) = mod1 {
+                                index1 += txt.len() as i32;
                             }
                         }
                     }
@@ -2920,34 +2908,32 @@ impl Dmp {
                         .push(Diff::Keep(precontext.clone().iter().collect()));
                 }
                 while !bigpatch.diffs.is_empty() && patch.length1 < patch_size - self.patch_margin {
-                    let mut diff_text: Vec<char> = bigpatch.diffs[0].text().chars().collect();
-                    match bigpatch.diffs[0] {
-                        Diff::Add(_) => {
+                    match &bigpatch.diffs[0] {
+                        Diff::Add(txt) => {
                             // Insertions are harmless.
-                            patch.length2 += diff_text.len() as i32;
-                            start2 += diff_text.len() as i32;
+                            patch.length2 += txt.len() as i32;
+                            start2 += txt.len() as i32;
                             patch.diffs.push(bigpatch.diffs[0].clone());
                             bigpatch.diffs.remove(0);
                             empty = false;
                         }
-                        Diff::Delete(_)
+                        Diff::Delete(txt)
                             if patch.diffs.len() == 1
                                 && matches!(patch.diffs[0], Diff::Keep(_))
-                                && (diff_text.len() as i32) > 2 * patch_size =>
+                                && (txt.len() as i32) > 2 * patch_size =>
                         {
                             // This is a large deletion.  Let it pass in one chunk.
-                            patch.length1 += diff_text.len() as i32;
-                            start1 += diff_text.len() as i32;
+                            patch.length1 += txt.len() as i32;
+                            start1 += txt.len() as i32;
                             empty = false;
-                            patch
-                                .diffs
-                                .push(bigpatch.diffs[0].with_text(diff_text.iter().collect()));
+                            patch.diffs.push(bigpatch.diffs[0].with_text(txt.clone()));
                             bigpatch.diffs.remove(0);
                         }
-                        Diff::Keep(_) | Diff::Delete(_) => {
+                        Diff::Keep(txt) | Diff::Delete(txt) => {
                             // Deletion or equality.  Only take as much as we can stomach.
-                            let diff_text_len: i32 = diff_text.len() as i32;
-                            diff_text = diff_text[..min(
+                            let diff_text_len: i32 = txt.len() as i32;
+                            let diff_text: Vec<char> = txt.chars().collect();
+                            let diff_text = diff_text[..min(
                                 diff_text_len,
                                 patch_size - patch.length1 - self.patch_margin,
                             ) as usize]
@@ -2964,10 +2950,10 @@ impl Dmp {
                                 bigpatch.diffs[0].with_text(diff_text.clone().iter().collect()),
                             );
                             let temp: String = diff_text[..].iter().collect();
-                            if temp == bigpatch.diffs[0].text().clone() {
+                            if &temp == txt {
                                 bigpatch.diffs.remove(0);
                             } else {
-                                let temp1: Vec<char> = bigpatch.diffs[0].text().chars().collect();
+                                let temp1: Vec<char> = txt.chars().collect();
                                 bigpatch.diffs[0]
                                     .set_text(temp1[diff_text.len()..].iter().collect());
                             }
@@ -3166,13 +3152,13 @@ impl Display for Patch {
         }
         text += " @@\n";
         for i in 0..self.diffs.len() {
-            let ch: char = match self.diffs[i] {
-                Diff::Keep(_) => ' ',
-                Diff::Delete(_) => '-',
-                Diff::Add(_) => '+',
+            let (ch, txt) = match &self.diffs[i] {
+                Diff::Keep(txt) => (' ', txt),
+                Diff::Delete(txt) => ('-', txt),
+                Diff::Add(txt) => ('+', txt),
             };
             text.push(ch);
-            let text_vec: Vec<char> = self.diffs[i].text().chars().collect();
+            let text_vec: Vec<char> = txt.chars().collect();
             let temp5: Vec<char> = vec![
                 '!', '~', '*', '(', ')', ';', '/', '?', ':', '@', '&', '=', '+', '$', ',', '#',
                 ' ', '\'',
