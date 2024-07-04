@@ -68,7 +68,6 @@ pub struct Patch {
     pub length2: i32,
 }
 impl Diff {
-    // A new diff diff object created.
     pub fn new(operation: i32, text: String) -> Diff {
         match operation {
             -1 => Diff::Delete(text),
@@ -77,7 +76,6 @@ impl Diff {
             _ => unreachable!(),
         }
     }
-
     pub fn operation(&self) -> i32 {
         match self {
             Diff::Add(_) => 1,
@@ -262,14 +260,14 @@ impl Dmp {
         if text1.is_empty() && text2.is_empty() {
             return vec![];
         } else if text1.is_empty() {
-            return vec![Diff::new(1, text2.to_string())];
+            return vec![Diff::Add(text2.to_string())];
         } else if text2.is_empty() {
-            return vec![Diff::new(-1, text1.to_string())];
+            return vec![Diff::Delete(text1.to_string())];
         }
 
         // check for equality
         if text1 == text2 {
-            return vec![Diff::new(0, text1.to_string())];
+            return vec![Diff::Keep(text1.to_string())];
         }
 
         let mut char1: Vec<char> = text1.chars().collect();
@@ -293,7 +291,7 @@ impl Dmp {
 
         //Restore the prefix
         if !commonprefix.is_empty() {
-            diffs.push(Diff::new(0, commonprefix.iter().collect()));
+            diffs.push(Diff::Keep(commonprefix.iter().collect()));
         }
 
         // Compute the diff on the middle block.
@@ -304,7 +302,7 @@ impl Dmp {
 
         // Restore the suffix
         if !commonsuffix.is_empty() {
-            diffs.push(Diff::new(0, commonsuffix.iter().collect()));
+            diffs.push(Diff::Keep(commonsuffix.iter().collect()));
         }
         self.diff_cleanup_merge(&mut diffs);
         diffs
@@ -335,11 +333,11 @@ impl Dmp {
         let mut diffs: Vec<Diff> = Vec::new();
         if text1.is_empty() {
             // Just add some text (speedup).
-            diffs.push(Diff::new(1, text2.iter().collect()));
+            diffs.push(Diff::Add(text2.iter().collect()));
             return diffs;
         } else if text2.is_empty() {
             // Just delete some text (speedup).
-            diffs.push(Diff::new(-1, text1.iter().collect()));
+            diffs.push(Diff::Delete(text1.iter().collect()));
             return diffs;
         }
         {
@@ -355,23 +353,21 @@ impl Dmp {
                 // Shorter text is inside the longer text (speedup).
                 if len1 > len2 {
                     if i != 0 {
-                        diffs.push(Diff::new(-1, (text1[0..(i as usize)]).iter().collect()));
+                        diffs.push(Diff::Delete((text1[0..(i as usize)]).iter().collect()));
                     }
-                    diffs.push(Diff::new(0, text2.iter().collect()));
+                    diffs.push(Diff::Keep(text2.iter().collect()));
                     if i as usize + text2.len() != text1.len() {
-                        diffs.push(Diff::new(
-                            -1,
+                        diffs.push(Diff::Delete(
                             text1[((i as usize) + text2.len())..].iter().collect(),
                         ));
                     }
                 } else {
                     if i != 0 {
-                        diffs.push(Diff::new(1, (text2[0..(i as usize)]).iter().collect()));
+                        diffs.push(Diff::Add((text2[0..(i as usize)]).iter().collect()));
                     }
-                    diffs.push(Diff::new(0, text1.iter().collect()));
+                    diffs.push(Diff::Keep(text1.iter().collect()));
                     if (i as usize) + text1.len() != text2.len() {
-                        diffs.push(Diff::new(
-                            1,
+                        diffs.push(Diff::Add(
                             text2[((i as usize) + text1.len())..].iter().collect(),
                         ));
                     }
@@ -381,8 +377,8 @@ impl Dmp {
             if shorttext.len() == 1 {
                 // Single character string.
                 // After the previous speedup, the character can't be an equality.
-                diffs.push(Diff::new(-1, text1.iter().collect()));
-                diffs.push(Diff::new(1, text2.iter().collect()));
+                diffs.push(Diff::Delete(text1.iter().collect()));
+                diffs.push(Diff::Add(text2.iter().collect()));
                 return diffs;
             }
         }
@@ -400,7 +396,7 @@ impl Dmp {
                 self.diff_main_internal(text1_a.as_str(), text2_a.as_str(), checklines, start_time);
             let diffs_b =
                 self.diff_main_internal(text1_b.as_str(), text2_b.as_str(), checklines, start_time);
-            diffs_a.push(Diff::new(0, mid_common));
+            diffs_a.push(Diff::Keep(mid_common));
             // Merge the result.
             for x in diffs_b {
                 diffs_a.push(x);
@@ -565,7 +561,7 @@ impl Dmp {
 
         // Rediff any replacement blocks, this time character-by-character.
         // Add a dummy entry at the end.
-        diffs.push(Diff::new(0, "".to_string()));
+        diffs.push(Diff::Keep("".to_string()));
         let mut count_delete = 0;
         let mut count_insert = 0;
         let mut text_delete: String = "".to_string();
@@ -598,10 +594,10 @@ impl Dmp {
                     ));
                 } else {
                     if !text_delete.is_empty() {
-                        temp.push(Diff::new(-1, text_delete));
+                        temp.push(Diff::Delete(text_delete));
                     }
                     if !text_insert.is_empty() {
-                        temp.push(Diff::new(1, text_insert));
+                        temp.push(Diff::Add(text_insert));
                     }
                     temp.push(Diff::new(
                         diffs[pointer].operation(),
@@ -771,8 +767,8 @@ impl Dmp {
         }
         // number of diffs equals number of characters, no commonality at all.
         vec![
-            Diff::new(-1, char1.iter().collect()),
-            Diff::new(1, char2.iter().collect()),
+            Diff::Delete(char1.iter().collect()),
+            Diff::Add(char2.iter().collect()),
         ]
     }
 
@@ -1296,7 +1292,7 @@ impl Dmp {
                 length_insertions2 = 0;
                 length_deletions1 = length_deletions2;
                 length_deletions2 = 0;
-                last_equality.clone_from(&diffs[pointer as usize].text());
+                last_equality.clone_from(diffs[pointer as usize].text());
             } else {
                 // An insertion or deletion.
                 if diffs[pointer as usize].operation() == 1 {
@@ -1314,11 +1310,10 @@ impl Dmp {
                     // Duplicate record.
                     diffs.insert(
                         equalities[equalities.len() - 1] as usize,
-                        Diff::new(-1, last_equality.clone()),
+                        Diff::Delete(last_equality.clone()),
                     );
                     // Change second copy to insert.
-                    diffs[equalities[equalities.len() - 1] as usize + 1] = Diff::new(
-                        1,
+                    diffs[equalities[equalities.len() - 1] as usize + 1] = Diff::Add(
                         diffs[equalities[equalities.len() - 1] as usize + 1]
                             .text()
                             .clone(),
@@ -1369,21 +1364,17 @@ impl Dmp {
                         // Overlap found.  Insert an equality and trim the surrounding edits.
                         diffs.insert(
                             pointer as usize,
-                            Diff::new(
-                                0,
+                            Diff::Keep(
                                 insertion_vec[..(overlap_length1 as usize)].iter().collect(),
                             ),
                         );
-                        diffs[pointer as usize - 1] = Diff::new(
-                            -1,
+                        diffs[pointer as usize - 1] = Diff::Delete(
                             deletion_vec[..(deletion_vec.len() - overlap_length1 as usize)]
                                 .iter()
                                 .collect(),
                         );
-                        diffs[pointer as usize + 1] = Diff::new(
-                            1,
-                            insertion_vec[(overlap_length1 as usize)..].iter().collect(),
-                        );
+                        diffs[pointer as usize + 1] =
+                            Diff::Add(insertion_vec[(overlap_length1 as usize)..].iter().collect());
                         pointer += 1;
                     }
                 } else if (overlap_length2 as f32) >= (deletion_vec.len() as f32 / 2.0)
@@ -1393,22 +1384,16 @@ impl Dmp {
                     // Insert an equality and swap and trim the surrounding edits.
                     diffs.insert(
                         pointer as usize,
-                        Diff::new(
-                            0,
-                            deletion_vec[..(overlap_length2 as usize)].iter().collect(),
-                        ),
+                        Diff::Keep(deletion_vec[..(overlap_length2 as usize)].iter().collect()),
                     );
                     let insertion_vec_len = insertion_vec.len();
-                    diffs[pointer as usize - 1] = Diff::new(
-                        1,
+                    diffs[pointer as usize - 1] = Diff::Add(
                         insertion_vec[..(insertion_vec_len - overlap_length2 as usize)]
                             .iter()
                             .collect(),
                     );
-                    diffs[pointer as usize + 1] = Diff::new(
-                        -1,
-                        deletion_vec[(overlap_length2 as usize)..].iter().collect(),
-                    );
+                    diffs[pointer as usize + 1] =
+                        Diff::Delete(deletion_vec[(overlap_length2 as usize)..].iter().collect());
                     pointer += 1;
                 }
                 pointer += 1;
@@ -1628,7 +1613,7 @@ impl Dmp {
                     equalities.push(pointer);
                     pre_ins = post_ins;
                     pre_del = post_del;
-                    last_equality.clone_from(&diffs[pointer as usize].text());
+                    last_equality.clone_from(diffs[pointer as usize].text());
                 } else {
                     // Not a candidate, and can never become one.
                     equalities = vec![];
@@ -1665,11 +1650,10 @@ impl Dmp {
                     // Duplicate record.
                     diffs.insert(
                         equalities[equalities.len() - 1] as usize,
-                        Diff::new(-1, last_equality),
+                        Diff::Delete(last_equality),
                     );
                     // Change second copy to insert.
-                    diffs[equalities[equalities.len() - 1] as usize + 1] = Diff::new(
-                        1,
+                    diffs[equalities[equalities.len() - 1] as usize + 1] = Diff::Add(
                         diffs[equalities[equalities.len() - 1] as usize + 1]
                             .text()
                             .clone(),
@@ -1714,7 +1698,7 @@ impl Dmp {
         if diffs.is_empty() {
             return;
         }
-        diffs.push(Diff::new(0, "".to_string()));
+        diffs.push(Diff::Keep("".to_string()));
         let mut text_insert: String = "".to_string();
         let mut text_delete: String = "".to_string();
         let mut i: i32 = 0;
@@ -1747,7 +1731,7 @@ impl Dmp {
                                     diffs[x as usize].text().clone() + temp1.as_str(),
                                 );
                             } else {
-                                diffs.insert(0, Diff::new(0, temp1));
+                                diffs.insert(0, Diff::Keep(temp1));
                                 i += 1;
                             }
                             insert_vec = insert_vec[(commonlength as usize)..].to_vec();
@@ -1778,11 +1762,11 @@ impl Dmp {
                         diffs.remove(i as usize);
                     }
                     if !delete_vec.is_empty() {
-                        diffs.insert(i as usize, Diff::new(-1, delete_vec.iter().collect()));
+                        diffs.insert(i as usize, Diff::Delete(delete_vec.iter().collect()));
                         i += 1;
                     }
                     if !insert_vec.is_empty() {
-                        diffs.insert(i as usize, Diff::new(1, insert_vec.iter().collect()));
+                        diffs.insert(i as usize, Diff::Add(insert_vec.iter().collect()));
                         i += 1;
                     }
                     i += 1;
@@ -1918,7 +1902,7 @@ impl Dmp {
         let mut chars2 = 0;
         let mut last_chars1 = 0;
         let mut last_chars2 = 0;
-        let mut lastdiff = Diff::new(0, "".to_string());
+        let mut lastdiff = Diff::Keep("".to_string());
         let z = 0;
         for diffs_item in diffs {
             if diffs_item.operation() != 1 {
@@ -2205,7 +2189,7 @@ impl Dmp {
                 let text = percent_decode(operation_content.as_bytes())
                     .decode_utf8()?
                     .to_string();
-                diffs.push(Diff::new(1, text));
+                diffs.push(Diff::Add(text));
             } else {
                 let content_length = operation_content.parse::<usize>().unwrap();
                 let range = text_offset..(content_length + text_offset);
@@ -2476,7 +2460,7 @@ impl Dmp {
             .collect();
         let prefix_length = prefix.chars().count() as i32;
         if !prefix.is_empty() {
-            patch.diffs.insert(0, Diff::new(0, prefix.clone()));
+            patch.diffs.insert(0, Diff::Keep(prefix.clone()));
         }
 
         // Add the suffix.
@@ -2486,7 +2470,7 @@ impl Dmp {
             .collect();
         let suffix_length = suffix.chars().count() as i32;
         if !suffix.is_empty() {
-            patch.diffs.push(Diff::new(0, suffix));
+            patch.diffs.push(Diff::Keep(suffix));
         }
         // Roll back the start points.
         patch.start1 -= prefix_length;
@@ -2850,7 +2834,7 @@ impl Dmp {
         let mut text_len = diffs[0].text().chars().count() as i32;
         if diffs.is_empty() || diffs[0].operation() != 0 {
             // Add nullPadding equality.
-            diffs.insert(0, Diff::new(0, nullpadding.clone().iter().collect()));
+            diffs.insert(0, Diff::Keep(nullpadding.clone().iter().collect()));
             patch.start1 -= padding_length; // Should be 0.
             patch.start2 -= padding_length; // Should be 0.
             patch.length1 += padding_length;
@@ -2875,7 +2859,7 @@ impl Dmp {
         text_len = diffs[diffs.len() - 1].text().chars().count() as i32;
         if diffs.is_empty() || diffs[diffs.len() - 1].operation() != 0 {
             // Add nullPadding equality.
-            diffs.push(Diff::new(0, nullpadding.clone().iter().collect()));
+            diffs.push(Diff::Keep(nullpadding.clone().iter().collect()));
             patch.length1 += padding_length;
             patch.length2 += padding_length;
         } else if padding_length > text_len {
@@ -2930,7 +2914,7 @@ impl Dmp {
                     patch.length2 = precontext.len() as i32;
                     patch
                         .diffs
-                        .push(Diff::new(0, precontext.clone().iter().collect()));
+                        .push(Diff::Keep(precontext.clone().iter().collect()));
                 }
                 while !bigpatch.diffs.is_empty() && patch.length1 < patch_size - self.patch_margin {
                     let diff_type = bigpatch.diffs[0].operation();
@@ -3007,7 +2991,7 @@ impl Dmp {
                         let len = patch.diffs.len();
                         patch.diffs[len - 1].append_text(&postcontext);
                     } else {
-                        patch.diffs.push(Diff::new(0, postcontext));
+                        patch.diffs.push(Diff::Keep(postcontext));
                     }
                 }
                 if !empty {
@@ -3120,7 +3104,7 @@ impl Dmp {
                     .unwrap()
                     .to_string();
                 patch.length2 += temp6.chars().count() as i32;
-                patch.diffs.push(Diff::new(1, temp6));
+                patch.diffs.push(Diff::Add(temp6));
             } else if text_vec[0] == '-' {
                 // Deletion.
                 let mut temp6: String = text_vec[1..].iter().collect();
@@ -3129,7 +3113,7 @@ impl Dmp {
                     .unwrap()
                     .to_string();
                 patch.length1 += temp6.chars().count() as i32;
-                patch.diffs.push(Diff::new(-1, temp6));
+                patch.diffs.push(Diff::Delete(temp6));
             } else if text_vec[0] == ' ' {
                 // Minor equality.
                 let mut temp6: String = text_vec[1..].iter().collect();
@@ -3139,7 +3123,7 @@ impl Dmp {
                     .to_string();
                 patch.length1 += temp6.chars().count() as i32;
                 patch.length2 += temp6.chars().count() as i32;
-                patch.diffs.push(Diff::new(0, temp6));
+                patch.diffs.push(Diff::Keep(temp6));
             } else {
                 panic!("wrong patch string");
             }
