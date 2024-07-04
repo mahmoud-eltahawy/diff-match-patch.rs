@@ -68,14 +68,6 @@ pub struct Patch {
     pub length2: i32,
 }
 impl Diff {
-    pub fn new(operation: i32, text: String) -> Diff {
-        match operation {
-            -1 => Diff::Delete(text),
-            0 => Diff::Keep(text),
-            1 => Diff::Add(text),
-            _ => unreachable!(),
-        }
-    }
     pub fn operation(&self) -> i32 {
         match self {
             Diff::Add(_) => 1,
@@ -89,6 +81,13 @@ impl Diff {
             Diff::Add(text) => text,
             Diff::Keep(text) => text,
             Diff::Delete(text) => text,
+        }
+    }
+    pub fn with_text(&self, text: String) -> Self {
+        match self {
+            Diff::Add(_) => Self::Add(text),
+            Diff::Keep(_) => Self::Keep(text),
+            Diff::Delete(_) => Self::Delete(text),
         }
     }
     pub fn set_text(&mut self, text: String) {
@@ -588,10 +587,7 @@ impl Dmp {
                     for z in sub_diff {
                         temp.push(z);
                     }
-                    temp.push(Diff::new(
-                        diffs[pointer].operation(),
-                        diffs[pointer].text().clone(),
-                    ));
+                    temp.push(diffs[pointer].with_text(diffs[pointer].text().clone()));
                 } else {
                     if !text_delete.is_empty() {
                         temp.push(Diff::Delete(text_delete));
@@ -599,10 +595,7 @@ impl Dmp {
                     if !text_insert.is_empty() {
                         temp.push(Diff::Add(text_insert));
                     }
-                    temp.push(Diff::new(
-                        diffs[pointer].operation(),
-                        diffs[pointer].text().clone(),
-                    ));
+                    temp.push(diffs[pointer].with_text(diffs[pointer].text().clone()));
                 }
                 count_delete = 0;
                 count_insert = 0;
@@ -1486,16 +1479,15 @@ impl Dmp {
                     // We have an improvement, save it back to the diff.
                     if !best_equality1.is_empty() {
                         diffs[pointer as usize - 1] =
-                            Diff::new(diffs[pointer as usize - 1].operation(), best_equality1);
+                            diffs[pointer as usize - 1].with_text(best_equality1);
                     } else {
                         diffs.remove(pointer as usize - 1);
                         pointer -= 1;
                     }
-                    diffs[pointer as usize] =
-                        Diff::new(diffs[pointer as usize].operation(), best_edit);
+                    diffs[pointer as usize] = diffs[pointer as usize].with_text(best_edit);
                     if !best_equality2.is_empty() {
                         diffs[pointer as usize + 1] =
-                            Diff::new(diffs[pointer as usize + 1].operation(), best_equality2);
+                            diffs[pointer as usize + 1].with_text(best_equality2);
                     } else {
                         diffs.remove(pointer as usize + 1);
                         pointer += 1;
@@ -1726,10 +1718,8 @@ impl Dmp {
                                 (&insert_vec)[..(commonlength as usize)].iter().collect();
                             let x = i - count_delete - count_insert - 1;
                             if x >= 0 && diffs[x as usize].operation() == 0 {
-                                diffs[x as usize] = Diff::new(
-                                    diffs[x as usize].operation(),
-                                    diffs[x as usize].text().clone() + temp1.as_str(),
-                                );
+                                diffs[x as usize] = diffs[x as usize]
+                                    .with_text(diffs[x as usize].text().clone() + temp1.as_str());
                             } else {
                                 diffs.insert(0, Diff::Keep(temp1));
                                 i += 1;
@@ -1745,10 +1735,8 @@ impl Dmp {
                                 [(insert_vec.len() - commonlength as usize)..]
                                 .iter()
                                 .collect();
-                            diffs[i as usize] = Diff::new(
-                                diffs[i as usize].operation(),
-                                temp1 + diffs[i as usize].text().as_str(),
-                            );
+                            diffs[i as usize] = diffs[i as usize]
+                                .with_text(temp1 + diffs[i as usize].text().as_str());
                             insert_vec =
                                 insert_vec[..(insert_vec.len() - commonlength as usize)].to_vec();
                             delete_vec =
@@ -1772,8 +1760,7 @@ impl Dmp {
                     i += 1;
                 } else if i != 0 && diffs[i as usize - 1].operation() == 0 {
                     // Merge this equality with the previous one.
-                    diffs[i as usize - 1] = Diff::new(
-                        diffs[i as usize - 1].operation(),
+                    diffs[i as usize - 1] = diffs[i as usize - 1].with_text(
                         diffs[i as usize - 1].text().clone() + diffs[i as usize].text().as_str(),
                     );
                     diffs.remove(i as usize);
@@ -1915,7 +1902,7 @@ impl Dmp {
             }
             if chars1 > loc {
                 // Overshot the location.
-                lastdiff = Diff::new(diffs_item.operation(), diffs_item.text().clone());
+                lastdiff = diffs_item.with_text(diffs_item.text().clone());
                 break;
             }
             last_chars1 = chars1;
@@ -2194,10 +2181,12 @@ impl Dmp {
                 let content_length = operation_content.parse::<usize>().unwrap();
                 let range = text_offset..(content_length + text_offset);
 
-                diffs.push(Diff::new(
-                    if operation == "=" { 0 } else { -1 },
-                    text1.slice(range)?,
-                ));
+                let text = text1.slice(range)?;
+                diffs.push(if operation == "=" {
+                    Diff::Keep(text)
+                } else {
+                    Diff::Delete(text)
+                });
 
                 text_offset += content_length;
             }
@@ -2559,7 +2548,7 @@ impl Dmp {
                 // Insertion
                 patch
                     .diffs
-                    .push(Diff::new(diffs[i].operation(), diffs[i].text().clone()));
+                    .push(diffs[i].with_text(diffs[i].text().clone()));
                 let temp: Vec<char> = postpatch[char_count2 as usize..].to_vec();
                 postpatch = postpatch[..char_count2 as usize].to_vec();
                 patch.length2 += temp1.len() as i32;
@@ -2573,7 +2562,7 @@ impl Dmp {
                 // Deletion.
                 patch
                     .diffs
-                    .push(Diff::new(diffs[i].operation(), diffs[i].text().clone()));
+                    .push(diffs[i].with_text(diffs[i].text().clone()));
                 let temp: Vec<char> = postpatch[(temp1.len() + char_count2 as usize)..].to_vec();
                 postpatch = postpatch[..char_count2 as usize].to_vec();
                 patch.length1 += temp1.len() as i32;
@@ -2588,7 +2577,7 @@ impl Dmp {
                     // Small equality inside a patch.
                     patch
                         .diffs
-                        .push(Diff::new(diffs[i].operation(), diffs[i].text().clone()));
+                        .push(diffs[i].with_text(diffs[i].text().clone()));
                     patch.length1 += temp1.len() as i32;
                     patch.length2 += temp1.len() as i32;
                 }
@@ -2636,10 +2625,8 @@ impl Dmp {
         for patches_item in patches {
             let mut patch_copy = Patch::new(vec![], 0, 0, 0, 0);
             for j in 0..patches_item.diffs.len() {
-                let diff_copy = Diff::new(
-                    patches_item.diffs[j].operation(),
-                    patches_item.diffs[j].text().clone(),
-                );
+                let diff_copy =
+                    patches_item.diffs[j].with_text(patches_item.diffs[j].text().clone());
                 patch_copy.diffs.push(diff_copy);
             }
             patch_copy.start1 = patches_item.start1;
@@ -2844,7 +2831,7 @@ impl Dmp {
             let extra_length = padding_length - text_len;
             let mut new_text: String = nullpadding[text_len as usize..].iter().collect();
             new_text += diffs[0].text().as_str();
-            diffs[0] = Diff::new(diffs[0].operation(), new_text);
+            diffs[0] = diffs[0].with_text(new_text);
             patch.start1 -= extra_length;
             patch.start2 -= extra_length;
             patch.length1 += extra_length;
@@ -2868,7 +2855,7 @@ impl Dmp {
             let mut new_text: String = nullpadding[..extra_length as usize].iter().collect();
             let diffs_len = diffs.len();
             new_text = diffs[diffs_len - 1].text().clone() + new_text.as_str();
-            diffs[diffs_len - 1] = Diff::new(diffs[diffs_len - 1].operation(), new_text);
+            diffs[diffs_len - 1] = diffs[diffs_len - 1].with_text(new_text);
             patch.length1 += extra_length;
             patch.length2 += extra_length;
         }
@@ -2937,7 +2924,7 @@ impl Dmp {
                         empty = false;
                         patch
                             .diffs
-                            .push(Diff::new(diff_type, diff_text.iter().collect()));
+                            .push(bigpatch.diffs[0].with_text(diff_text.iter().collect()));
                         bigpatch.diffs.remove(0);
                     } else {
                         // Deletion or equality.  Only take as much as we can stomach.
@@ -2957,7 +2944,7 @@ impl Dmp {
                         }
                         patch
                             .diffs
-                            .push(Diff::new(diff_type, diff_text.clone().iter().collect()));
+                            .push(bigpatch.diffs[0].with_text(diff_text.clone().iter().collect()));
                         let temp: String = diff_text[..].iter().collect();
                         if temp == bigpatch.diffs[0].text().clone() {
                             bigpatch.diffs.remove(0);
