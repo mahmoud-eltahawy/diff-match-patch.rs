@@ -113,7 +113,7 @@ pub fn test_diff_common_overlap() {
 pub fn test_diff_half_match() {
     let mut dmp = diff_match_patch::Dmp::new();
     dmp.diff_timeout = Some(1.0);
-    let temp: Vec<String> = vec![];
+    let temp: Option<[String; 5]> = None;
     assert_eq!(
         temp,
         dmp.diff_half_match(
@@ -129,35 +129,65 @@ pub fn test_diff_half_match() {
         )
     );
     assert_eq!(
-        dmp.split_by_char("12,90,a,z,345678", ','),
+        Some([
+            "12".to_string(),
+            "90".to_string(),
+            "a".to_string(),
+            "z".to_string(),
+            "345678".to_string()
+        ]),
         dmp.diff_half_match(
             &("1234567890".to_string().chars().collect::<Vec<_>>()),
             &("a345678z".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
-        dmp.split_by_char("a,z,12,90,345678", ','),
+        Some([
+            "a".to_string(),
+            "z".to_string(),
+            "12".to_string(),
+            "90".to_string(),
+            "345678".to_string()
+        ]),
         dmp.diff_half_match(
             &("a345678z".to_string().chars().collect::<Vec<_>>()),
             &("1234567890".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
-        dmp.split_by_char("abc,z,1234,0,56789", ','),
+        Some([
+            "abc".to_string(),
+            "z".to_string(),
+            "1234".to_string(),
+            "0".to_string(),
+            "56789".to_string()
+        ]),
         dmp.diff_half_match(
             &("abc56789z".to_string().chars().collect::<Vec<_>>()),
             &("1234567890".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
-        dmp.split_by_char("a,xyz,1,7890,23456", ','),
+        Some([
+            "a".to_string(),
+            "xyz".to_string(),
+            "1".to_string(),
+            "7890".to_string(),
+            "23456".to_string()
+        ]),
         dmp.diff_half_match(
             &("a23456xyz".to_string().chars().collect::<Vec<_>>()),
             &("1234567890".to_string().chars().collect::<Vec<_>>())
         )
     );
     assert_eq!(
-        dmp.split_by_char("12123,123121,a,z,1234123451234", ','),
+        Some([
+            "12123".to_string(),
+            "123121".to_string(),
+            "a".to_string(),
+            "z".to_string(),
+            "1234123451234".to_string()
+        ]),
         dmp.diff_half_match(
             &("121231234123451234123121"
                 .to_string()
@@ -167,7 +197,13 @@ pub fn test_diff_half_match() {
         )
     );
     assert_eq!(
-        dmp.split_by_char(",-=-=-=-=-=,x,,x-=-=-=-=-=-=-=", ','),
+        Some([
+            "".to_string(),
+            "-=-=-=-=-=".to_string(),
+            "x".to_string(),
+            "".to_string(),
+            "x-=-=-=-=-=-=-=".to_string()
+        ]),
         dmp.diff_half_match(
             &("x-=-=-=-=-=-=-=-=-=-=-=-="
                 .to_string()
@@ -177,7 +213,13 @@ pub fn test_diff_half_match() {
         )
     );
     assert_eq!(
-        dmp.split_by_char("-=-=-=-=-=,,,y,-=-=-=-=-=-=-=y", ','),
+        Some([
+            "-=-=-=-=-=".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "y".to_string(),
+            "-=-=-=-=-=-=-=y".to_string()
+        ]),
         dmp.diff_half_match(
             &("-=-=-=-=-=-=-=-=-=-=-=-=y"
                 .to_string()
@@ -187,7 +229,13 @@ pub fn test_diff_half_match() {
         )
     );
     assert_eq!(
-        dmp.split_by_char("qHillo,w,x,Hulloy,HelloHe", ','),
+        Some([
+            "qHillo".to_string(),
+            "w".to_string(),
+            "x".to_string(),
+            "Hulloy".to_string(),
+            "HelloHe".to_string()
+        ]),
         dmp.diff_half_match(
             &("qHilloHelloHew".to_string().chars().collect::<Vec<_>>()),
             &("xHelloHeHulloy".to_string().chars().collect::<Vec<_>>())
@@ -199,7 +247,7 @@ pub fn test_diff_half_match() {
 pub fn test_diff_half_match_no_timeout() {
     let mut dmp = diff_match_patch::Dmp::new();
     dmp.diff_timeout = None;
-    let empty_vec: Vec<String> = vec![];
+    let empty_vec: Option<[String; 5]> = None;
     assert_eq!(
         empty_vec,
         dmp.diff_half_match(

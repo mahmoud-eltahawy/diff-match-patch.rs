@@ -334,14 +334,10 @@ impl Dmp {
             }
         }
         // Check to see if the problem can be split in two.
-        let hm = self.diff_half_match(text1, text2);
-        if !hm.is_empty() {
+        if let Some([text1_a, text1_b, text2_a, text2_b, mid_common]) =
+            self.diff_half_match(text1, text2)
+        {
             // A half-match was found, sort out the return data.
-            let text1_a = hm[0].clone();
-            let text1_b = hm[1].clone();
-            let text2_a = hm[2].clone();
-            let text2_b = hm[3].clone();
-            let mid_common = hm[4].clone();
             // Send both pairs off for separate processing.
             let mut diffs_a =
                 self.diff_main_internal(text1_a.as_str(), text2_a.as_str(), checklines, start_time);
@@ -354,6 +350,7 @@ impl Dmp {
             }
             return diffs_a;
         }
+
         if checklines && text1.len() > 100 && text2.len() > 100 {
             return self.diff_linemode_internal(text1, text2, start_time);
         }
@@ -1061,11 +1058,8 @@ impl Dmp {
     /// Five element Vector, containing the prefix of text1, the suffix of text1,
     /// the prefix of text2, the suffix of text2 and the common middle.  Or empty vector
     /// if there was no match.
-    pub fn diff_half_match(&self, text1: &[char], text2: &[char]) -> Vec<String> {
-        // Don't risk returning a non-optimal diff if we have unlimited time.
-        if self.diff_timeout.is_none() {
-            return vec![];
-        }
+    pub fn diff_half_match(&self, text1: &[char], text2: &[char]) -> Option<[String; 5]> {
+        self.diff_timeout?;
 
         let (long_text, short_text) = if text1.len() > text2.len() {
             (text1, text2)
@@ -1075,41 +1069,33 @@ impl Dmp {
         let len1 = short_text.len();
         let len2 = long_text.len();
         if len2 < 4 || len1 * 2 < len2 {
-            return vec![];
+            return None;
         }
 
-        let mut hm: Vec<String>;
         //First check if the second quarter is the seed for a half-match.
-        let hm1 = self.diff_half_matchi(long_text, short_text, (len2 + 3) / 4);
         // Check again based on the third quarter.
-        let hm2 = self.diff_half_matchi(long_text, short_text, (len2 + 1) / 2);
-
-        if hm1.is_empty() && hm2.is_empty() {
-            return vec![];
-        } else if hm1.is_empty() {
-            hm = hm2;
-        } else if hm2.is_empty() {
-            hm = hm1;
-        } else {
-            // Both matched.  Select the longest.
-            hm = if hm1[4].len() > hm2[4].len() {
-                hm1
-            } else {
-                hm2
-            };
-        }
+        let hm = match (
+            self.diff_half_matchi(long_text, short_text, (len2 + 3) / 4),
+            self.diff_half_matchi(long_text, short_text, (len2 + 1) / 2),
+        ) {
+            (None, None) => return None,
+            (None, Some(hm2)) => hm2,
+            (Some(hm1), None) => hm1,
+            (Some(hm1), Some(hm2)) => {
+                // Both matched.  Select the longest.
+                if hm1[4].len() > hm2[4].len() {
+                    hm1
+                } else {
+                    hm2
+                }
+            }
+        };
         if text1.len() > text2.len() {
-            return hm;
+            return Some(hm);
         }
-        let mut temp2 = hm[0].clone();
-        let mut temp3 = hm[2].clone();
-        hm[0].clone_from(&temp3);
-        hm[2].clone_from(&temp2);
-        temp2.clone_from(&hm[1]);
-        temp3.clone_from(&hm[3]);
-        hm[1] = temp3;
-        hm[3] = temp2;
-        hm
+        let [first, second, third, forth, fifth] = hm;
+        let hm = [third, forth, first, second, fifth];
+        Some(hm)
     }
 
     /// Does a substring of shorttext exist within longtext such that the
@@ -1125,7 +1111,12 @@ impl Dmp {
     ///     Five element vector, containing the prefix of longtext, the suffix of
     ///     longtext, the prefix of shorttext, the suffix of shorttext and the
     ///     common middle.  Or empty vector if there was no match.
-    fn diff_half_matchi(&self, long_text: &[char], short_text: &[char], i: usize) -> Vec<String> {
+    fn diff_half_matchi(
+        &self,
+        long_text: &[char],
+        short_text: &[char],
+        i: usize,
+    ) -> Option<[String; 5]> {
         let long_len = long_text.len();
         let seed = Vec::from_iter(long_text[i..(i + long_len / 4)].iter().cloned());
         let mut best_common = "".to_string();
@@ -1149,15 +1140,15 @@ impl Dmp {
             jk = self.kmp(short_text, &seed, j + 1);
         }
         if best_common.chars().count() * 2 >= long_text.len() {
-            return vec![
+            return Some([
                 best_longtext_a,
                 best_longtext_b,
                 best_shorttext_a,
                 best_shorttext_b,
                 best_common,
-            ];
+            ]);
         }
-        vec![]
+        None
     }
     /// Reduce the number of edits by eliminating semantically trivial
     /// equalities.
