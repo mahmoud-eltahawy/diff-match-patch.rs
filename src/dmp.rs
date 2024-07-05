@@ -1004,39 +1004,6 @@ impl Dmp {
         }
     }
 
-    // split the string accoring to given character
-    //
-    // Args:
-    //     text: string we have to split
-    //     ch: character by which we have to split string
-    //
-    // Returns:
-    //     Vector of string after spliting according to character.
-    pub fn split_by_char(&self, text: &str, ch: char) -> Vec<String> {
-        let temp: Vec<&str> = text.split(ch).collect();
-        let mut temp1: Vec<String> = vec![];
-        for temp_item in &temp {
-            temp1.push(temp_item.to_string());
-        }
-        temp1
-    }
-
-    /// split the string accoring to given characters "@@ ".
-    ///
-    /// Args:
-    ///     text: string we have to split
-    ///
-    /// Returns:
-    ///     Vector of string after spliting according to characters.
-    pub fn split_by_chars(&self, text: &str) -> Vec<String> {
-        let temp: Vec<&str> = text.split("@@ ").collect();
-        let mut temp1: Vec<String> = vec![];
-        for temp_item in &temp {
-            temp1.push(temp_item.to_string());
-        }
-        temp1
-    }
-
     /// Do the two texts share a substring which is at least half the length of
     /// the longer text?
     /// This speedup can produce non-minimal diffs.
@@ -2837,7 +2804,7 @@ impl Dmp {
     /// Raises:
     ///     ValueError: If invalid input.
     pub fn patch_from_text(&self, textline: String) -> Vec<Patch> {
-        let text: Vec<String> = self.split_by_chars(textline.as_str());
+        let text: Vec<String> = textline.split("@@ ").map(|x| x.to_string()).collect();
         let mut patches: Vec<Patch> = vec![];
         for (i, text_item) in text.iter().enumerate() {
             if text_item.is_empty() {
@@ -2852,7 +2819,7 @@ impl Dmp {
     }
 
     pub fn patch1_from_text(&self, textline: String) -> Patch {
-        let text: Vec<String> = self.split_by_char(textline.as_str(), '\n');
+        let text: Vec<String> = textline.split('\n').map(|x| x.to_string()).collect();
         let mut text_vec: Vec<char> = text[0].chars().collect();
         if text_vec.len() < 8
             || text_vec[text_vec.len() - 1] != '@'
