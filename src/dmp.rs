@@ -98,7 +98,6 @@ impl Diff {
 }
 
 impl Patch {
-    // A new diff patch object created.
     pub fn new(diffs: Vec<Diff>, start1: i32, start2: i32, length1: i32, length2: i32) -> Patch {
         Patch {
             diffs,
@@ -110,22 +109,22 @@ impl Patch {
     }
 }
 
+/// return minimum element.
 fn min1(x: f32, y: f32) -> f32 {
-    // return minimum element.
     if x > y {
         return y;
     }
     x
 }
 
+/// it will return the first index of a character after a index or return -1 if not found.
 fn find_char(cha: char, text: &[char], start: usize) -> i32 {
-    // it will return the first index of a character after a index or return -1 if not found.
-    for (i, text_item) in text.iter().enumerate().skip(start) {
-        if *text_item == cha {
-            return i as i32;
-        }
-    }
-    -1
+    text.into_iter()
+        .enumerate()
+        .skip(start)
+        .find(|(_, text_item)| **text_item == cha)
+        .map(|(i, _)| i as i32)
+        .unwrap_or(-1)
 }
 
 trait StringView {
